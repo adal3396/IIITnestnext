@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NextNest — Unified Platform
 
-## Getting Started
+A unified Next.js platform bridging care gaps, connecting donors, orphanages, and administrators.
 
-First, run the development server:
+---
 
+## Team Structure & Working Areas
+
+| Role | Working Directory |
+|---|---|
+| 🌐 **Website / Public Portal** | `src/app/(portals)/public/` |
+| ❤️ **Donor Portal** | `src/app/(portals)/donor/` |
+| 🏠 **Orphanage Portal** | `src/app/(portals)/orphanage/` |
+| 🌟 **Super Admin Portal** | `src/app/(portals)/admin/` |
+| 🤖 **AI Engine Developer** | `src/app/api/ai/` |
+
+**Shared utilities** are in `src/lib/`:
+- `supabase.ts` — Database client (use in any component)
+- `groq.ts` — AI inference client (use in server-side API routes only)
+
+---
+
+## Setup (First Time)
+
+### 1. Prerequisites
+- [Node.js 18+](https://nodejs.org/)
+- [Git](https://git-scm.com/)
+
+### 2. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/adal3396/IIITHack.git
+cd IIITHack
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Install dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Set up environment variables
+```bash
+# Copy the example file
+cp .env.example .env.local
+```
+Then open `.env.local` and fill in values (ask team lead for the credentials):
+- `NEXT_PUBLIC_SUPABASE_URL` — from Supabase Project Settings → API
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — from Supabase Project Settings → API
+- `GROQ_API_KEY` — from https://console.groq.com/keys *(AI Engine dev only)*
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 5. Run the development server
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Git Workflow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> **Important:** Only commit changes to **your assigned directory**. Coordinate with others on `src/lib/` and shared components.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# 1. Always pull the latest code before starting work
+git pull origin main
 
-## Deploy on Vercel
+# 2. Create a branch for your feature
+git checkout -b feat/donor-ai-advisor
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# 3. Stage and commit your changes
+git add src/app/(portals)/donor/
+git commit -m "feat(donor): add AI advisor chat interface"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# 4. Push your branch and open a Pull Request
+git push origin feat/donor-ai-advisor
+```
+
+---
+
+## Tech Stack
+- **Framework:** Next.js 15 (App Router)
+- **Styling:** Tailwind CSS
+- **Database & Auth:** Supabase (PostgreSQL)
+- **AI Inference:** Groq API
+- **Icons:** Lucide React
