@@ -33,13 +33,13 @@ export async function GET() {
             .select("*", { count: "exact", head: true })
             .eq("status", "Open");
 
-        // AI audit: latest score (average confidence of Fair decisions)
+        // AI audit: latest score (percentage of DPDP compliant logs)
         const { data: auditData } = await supabase
             .from("ai_audit_logs")
-            .select("confidence, status");
+            .select("dpdp_compliant");
 
         const totalLogs = auditData?.length ?? 0;
-        const flaggedCount = auditData?.filter((d) => d.status === "Flagged").length ?? 0;
+        const flaggedCount = auditData?.filter((d) => !d.dpdp_compliant).length ?? 0;
         const fairScore = totalLogs > 0 ? (((totalLogs - flaggedCount) / totalLogs) * 100).toFixed(1) : "100.0";
 
         return NextResponse.json({

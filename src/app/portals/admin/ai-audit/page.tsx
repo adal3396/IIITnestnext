@@ -1,26 +1,28 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Activity, AlertTriangle, CheckCircle, BarChart3, RefreshCw, Eye, Loader2 } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle, BarChart3, RefreshCw, Eye, Loader2, ShieldCheck } from "lucide-react";
 
 interface AuditLog {
     id: string;
-    model: string;
-    action: string;
-    demographic: string;
-    confidence: number;
-    status: string;
+    agent_name: string;
+    action_type: string;
+    input_snapshot: any;
+    output_snapshot: any;
+    reasoning: string;
+    dpdp_compliant: boolean;
+    human_override_applied: boolean;
     created_at: string;
 }
 
 interface AuditMetrics {
-    fairScore: number;
+    dpdpScore: number;
     flaggedCount: number;
     totalLogs: number;
-    avgConfidence: number;
+    overridesCount: number;
 }
 
-const statusStyle = (status: string) =>
-    status === "Flagged"
+const statusStyle = (compliant: boolean) =>
+    !compliant
         ? "bg-red-50 text-red-700 border border-red-200"
         : "bg-emerald-50 text-emerald-700 border border-emerald-200";
 
@@ -48,10 +50,10 @@ export default function AIAuditPage() {
     useEffect(() => { fetchData(); }, []);
 
     const summaryCards = [
-        { label: "Overall Fairness Score", value: metrics ? `${metrics.fairScore}%` : "—", good: (metrics?.fairScore ?? 0) >= 90, icon: <CheckCircle className="w-5 h-5" /> },
-        { label: "Avg AI Confidence", value: metrics ? `${metrics.avgConfidence}%` : "—", good: (metrics?.avgConfidence ?? 0) >= 80, icon: <CheckCircle className="w-5 h-5" /> },
+        { label: "DPDP Compliant Data", value: metrics ? `${metrics.dpdpScore}%` : "—", good: (metrics?.dpdpScore ?? 0) >= 90, icon: <ShieldCheck className="w-5 h-5" /> },
+        { label: "Human Overrides", value: metrics?.overridesCount ?? "—", good: (metrics?.overridesCount ?? 1) === 0, icon: <AlertTriangle className="w-5 h-5" /> },
         { label: "Total Decisions", value: metrics?.totalLogs ?? "—", good: true, icon: <BarChart3 className="w-5 h-5" /> },
-        { label: "Flagged Decisions", value: metrics?.flaggedCount ?? "—", good: (metrics?.flaggedCount ?? 1) === 0, icon: <AlertTriangle className="w-5 h-5" /> },
+        { label: "Flagged (Non-compliant)", value: metrics?.flaggedCount ?? "—", good: (metrics?.flaggedCount ?? 1) === 0, icon: <AlertTriangle className="w-5 h-5" /> },
     ];
 
     return (
@@ -61,9 +63,9 @@ export default function AIAuditPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                         <Activity className="w-6 h-6 text-amber-500" />
-                        AI Bias Audit Dashboard
+                        AI Bias Audit &amp; DPDP Compliance Logs
                     </h1>
-                    <p className="text-slate-500 mt-1">Monitor AI Engine decisions for fairness and demographic equity (read-only — written by AI Engine dev).</p>
+                    <p className="text-slate-500 mt-1">Monitor AI Engine decisions for fairness and DPDP Act 2023 compliance.</p>
                 </div>
                 <button onClick={fetchData} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
                     <RefreshCw className="w-4 h-4" /> Refresh
@@ -101,30 +103,30 @@ export default function AIAuditPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="text-left text-slate-400 border-b border-slate-100">
-                                    <th className="pb-3 font-semibold">Model</th>
-                                    <th className="pb-3 font-semibold">Action</th>
-                                    <th className="pb-3 font-semibold">Demographic</th>
-                                    <th className="pb-3 font-semibold">Confidence</th>
-                                    <th className="pb-3 font-semibold">Status</th>
-                                    <th className="pb-3 font-semibold">Time</th>
+                                    <th className="pb-3 font-semibold">Agent Name</th>
+                                    <th className="pb-3 font-semibold">Action Type</th>
+                                    <th className="pb-3 font-semibold hidden md:table-cell">Reasoning</th>
+                                    <th className="pb-3 font-semibold">DPDP Compliant</th>
+                                    <th className="pb-3 font-semibold text-center">Override</th>
+                                    <th className="pb-3 font-semibold whitespace-nowrap">Time</th>
                                     <th className="pb-3 font-semibold"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {logs.map((d) => (
                                     <tr key={d.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="py-3 font-medium text-slate-700">{d.model}</td>
-                                        <td className="py-3 text-slate-600 max-w-[200px] truncate">{d.action}</td>
-                                        <td className="py-3 text-slate-500">{d.demographic}</td>
-                                        <td className="py-3 font-semibold text-slate-800">{d.confidence}%</td>
+                                        <td className="py-3 font-medium text-slate-700">{d.agent_name}</td>
+                                        <td className="py-3 text-slate-600">{d.action_type}</td>
+                                        <td className="py-3 text-slate-500 max-w-xs truncate hidden md:table-cell" title={d.reasoning}>{d.reasoning || "—"}</td>
                                         <td className="py-3">
-                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusStyle(d.status)}`}>
-                                                {d.status}
+                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusStyle(d.dpdp_compliant)}`}>
+                                                {d.dpdp_compliant ? "Compliant" : "Flagged"}
                                             </span>
                                         </td>
-                                        <td className="py-3 text-slate-400 text-xs">{timeAgo(d.created_at)}</td>
+                                        <td className="py-3 text-slate-600 text-center">{d.human_override_applied ? "Yes" : "No"}</td>
+                                        <td className="py-3 text-slate-400 text-xs whitespace-nowrap">{timeAgo(d.created_at)}</td>
                                         <td className="py-3">
-                                            <button className="text-slate-400 hover:text-slate-700"><Eye className="w-4 h-4" /></button>
+                                            <button className="text-slate-400 hover:text-slate-700 bg-slate-100 p-1.5 rounded"><Eye className="w-4 h-4" /></button>
                                         </td>
                                     </tr>
                                 ))}

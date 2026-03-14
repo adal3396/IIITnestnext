@@ -12,19 +12,17 @@ export async function GET() {
 
     // Compute aggregate metrics
     const total = data?.length ?? 0;
-    const flagged = data?.filter((d) => d.status === "Flagged").length ?? 0;
-    const fairScore = total > 0 ? (((total - flagged) / total) * 100).toFixed(1) : "100.0";
-    const avgConfidence = total > 0
-        ? (data!.reduce((sum, d) => sum + (d.confidence ?? 0), 0) / total).toFixed(1)
-        : "0.0";
+    const flagged = data?.filter((d) => !d.dpdp_compliant).length ?? 0;
+    const dpdpScore = total > 0 ? (((total - flagged) / total) * 100).toFixed(1) : "100.0";
+    const overrides = data?.filter((d) => d.human_override_applied).length ?? 0;
 
     return NextResponse.json({
         logs: data,
         metrics: {
-            fairScore: parseFloat(fairScore),
+            dpdpScore: parseFloat(dpdpScore),
             flaggedCount: flagged,
             totalLogs: total,
-            avgConfidence: parseFloat(avgConfidence),
+            overridesCount: overrides,
         },
     });
 }
