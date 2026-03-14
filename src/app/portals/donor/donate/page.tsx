@@ -11,7 +11,7 @@ import {
     Users,
 } from "lucide-react";
 
-type Tab = "sponsor" | "illness";
+type Tab = "sponsor" | "illness" | "general";
 
 type Campaign = {
     id: string;
@@ -66,32 +66,68 @@ export default function DonatePage() {
     const [amount, setAmount] = useState(1000);
     const [customAmount, setCustomAmount] = useState("");
     const [frequency, setFrequency] = useState(FREQUENCIES[0]);
+    const [consent, setConsent] = useState(false);
+    const [sponsorLoading, setSponsorLoading] = useState(false);
+    const [sponsorResult, setSponsorResult] = useState<DonateResult | null>(null);
+
+    // General Fund State
+    const [generalCategory, setGeneralCategory] = useState("General Education");
+    const [generalAmount, setGeneralAmount] = useState(1000);
+    const [generalCustomAmount, setGeneralCustomAmount] = useState("");
+    const [generalFrequency, setGeneralFrequency] = useState(FREQUENCIES[0]);
+    const [generalLoading, setGeneralLoading] = useState(false);
+    const [generalResult, setGeneralResult] = useState<DonateResult | null>(null);
+
+    const finalAmount = customAmount ? parseInt(customAmount) : amount;
+    const finalGeneralAmount = generalCustomAmount ? parseInt(generalCustomAmount) : generalAmount;
 
     // Pre-fill amount from AI Advisor suggestions if passed via URL
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const amountParam = params.get("amount");
+        const categoryParam = params.get("category");
+        let activeTab: Tab = "sponsor";
+
+        if (categoryParam) {
+            const lowerCat = categoryParam.toLowerCase();
+            if (lowerCat.includes("medical") || lowerCat.includes("illness") || lowerCat.includes("health") || lowerCat.includes("surgery")) {
+                activeTab = "illness";
+                setTab("illness");
+            } else if (lowerCat.includes("sponsor") || lowerCat.includes("child")) {
+                activeTab = "sponsor";
+                setTab("sponsor");
+            } else {
+                activeTab = "general";
+                setTab("general");
+                setGeneralCategory(categoryParam);
+            }
+        }
+
         if (amountParam) {
             const parsed = parseInt(amountParam.replace(/,/g, ""));
             if (!isNaN(parsed)) {
-                if (AMOUNTS.includes(parsed)) {
-                    setAmount(parsed);
-                } else {
-                    setAmount(0); // Clear selected fixed amount
-                    setCustomAmount(parsed.toString()); // Use custom amount input
+                if (activeTab === "sponsor" || activeTab === "illness") {
+                    if (AMOUNTS.includes(parsed)) {
+                        setAmount(parsed);
+                    } else {
+                        setAmount(0); // Clear selected fixed amount
+                        setCustomAmount(parsed.toString()); // Use custom amount input
+                    }
+                } else if (activeTab === "general") {
+                    if (AMOUNTS.includes(parsed)) {
+                        setGeneralAmount(parsed);
+                    } else {
+                        setGeneralAmount(0);
+                        setGeneralCustomAmount(parsed.toString());
+                    }
                 }
             }
         }
     }, []);
-    const [consent, setConsent] = useState(false);
-    const [sponsorLoading, setSponsorLoading] = useState(false);
-    const [sponsorResult, setSponsorResult] = useState<DonateResult | null>(null);
 
     // Campaign state
     const [campaignLoading, setCampaignLoading] = useState<string | null>(null);
     const [campaignResult, setCampaignResult] = useState<Record<string, DonateResult>>({});
-
-    const finalAmount = customAmount ? parseInt(customAmount) : amount;
 
     async function handleSponsor() {
         if (!consent || sponsorLoading) return;
@@ -115,6 +151,29 @@ export default function DonatePage() {
             setSponsorResult({ success: false, error: "Network error. Please try again." });
         } finally {
             setSponsorLoading(false);
+        }
+    }
+
+    async function handleGeneralDonate() {
+        if (generalLoading) return;
+        setGeneralLoading(true);
+        setGeneralResult(null);
+        try {
+            const res = await fetch("/api/donor/donate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    type: "general_fund",
+                    amount: finalGeneralAmount,
+                    category: generalCategory,
+                    frequency: generalFrequency,
+                }),
+            });
+            setGeneralResult(await res.json());
+        } catch {
+            setGeneralResult({ success: false, error: "Network error. Please try again." });
+        } finally {
+            setGeneralLoading(false);
         }
     }
 
@@ -145,16 +204,16 @@ export default function DonatePage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 gap-1.5">
-                {(["sponsor", "illness"] as Tab[]).map((t) => (
+            <div className="flex bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 gap-1.5 overflow-x-auto hide-scrollbar">
+                {(["sponsor", "general", "illness"] as Tab[]).map((t) => (
                     <button
                         key={t}
                         onClick={() => setTab(t)}
-                        aria-label={t === "sponsor" ? "Sponsor a Child tab" : "Critical Illness Fund tab"}
+                        aria-label={t === "sponsor" ? "Sponsor a Child tab" : t === "general" ? "General Fund tab" : "Critical Illness Fund tab"}
                         aria-pressed={tab === t}
-                        className={`flex-1 py-2.5 text-sm font-semibold rounded-xl transition-colors ${tab === t ? "bg-teal-600 text-white" : "text-gray-600 hover:text-teal-700"}`}
+                        className={`flex-1 min-w-[140px] py-2.5 text-sm font-semibold rounded-xl transition-colors ${tab === t ? "bg-teal-600 text-white" : "text-gray-600 hover:text-teal-700"}`}
                     >
-                        {t === "sponsor" ? "Sponsor a Child" : "Critical Illness Fund"}
+                        {t === "sponsor" ? "Sponsor a Child" : t === "general" ? "General Fund" : "Critical Illness Fund"}
                     </button>
                 ))}
             </div>
@@ -259,6 +318,83 @@ export default function DonatePage() {
                             <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Processing…</>
                         ) : (
                             <><HeartHandshake className="w-4 h-4" aria-hidden="true" /> Confirm Sponsorship — ₹{(finalAmount || 0).toLocaleString("en-IN")}</>
+                        )}
+                    </button>
+                </div>
+            )}
+
+            {/* General Fund Tab */}
+            {tab === "general" && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-5">
+                    {generalResult && (
+                        <div className={`flex items-start gap-2 p-3 rounded-xl text-sm ${generalResult.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                            {generalResult.success ? <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+                            {generalResult.success ? generalResult.message : generalResult.error}
+                        </div>
+                    )}
+
+                    {/* Category Display */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                        <p className="text-xs font-semibold tracking-wider uppercase text-blue-600 mb-1">Impact Area</p>
+                        <p className="text-lg font-bold text-gray-800">{generalCategory}</p>
+                        <p className="text-xs text-gray-500 mt-1">This fund supports broad orphanage infrastructure, operations, and programs.</p>
+                    </div>
+
+                    {/* Amount */}
+                    <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Donation Amount (₹)</p>
+                        <div className="grid grid-cols-4 gap-2 mb-2">
+                            {AMOUNTS.map((a) => (
+                                <button
+                                    key={a}
+                                    onClick={() => { setGeneralAmount(a); setGeneralCustomAmount(""); }}
+                                    aria-label={`₹${a.toLocaleString("en-IN")}`}
+                                    aria-pressed={generalAmount === a && !generalCustomAmount}
+                                    className={`py-2.5 text-sm font-semibold rounded-xl transition-all ${generalAmount === a && !generalCustomAmount ? "bg-teal-600 text-white" : "bg-gray-50 text-gray-600 hover:bg-teal-50"}`}
+                                >
+                                    ₹{a.toLocaleString("en-IN")}
+                                </button>
+                            ))}
+                        </div>
+                        <input
+                            type="number"
+                            placeholder="Or enter a custom amount"
+                            value={generalCustomAmount}
+                            onChange={(e) => setGeneralCustomAmount(e.target.value)}
+                            aria-label="Custom donation amount in rupees"
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+                        />
+                    </div>
+
+                    {/* Frequency */}
+                    <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Frequency</p>
+                        <div className="flex gap-2">
+                            {FREQUENCIES.map((f) => (
+                                <button
+                                    key={f}
+                                    onClick={() => setGeneralFrequency(f)}
+                                    aria-label={`${f} donation`}
+                                    aria-pressed={generalFrequency === f}
+                                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${generalFrequency === f ? "bg-teal-600 text-white" : "bg-gray-50 text-gray-600 hover:bg-teal-50"}`}
+                                >
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Submit */}
+                    <button
+                        onClick={handleGeneralDonate}
+                        disabled={generalLoading || !finalGeneralAmount || finalGeneralAmount <= 0}
+                        aria-label="Confirm donation"
+                        className="w-full flex items-center justify-center gap-2 bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {generalLoading ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Processing…</>
+                        ) : (
+                            <><HeartHandshake className="w-4 h-4" aria-hidden="true" /> Contribute ₹{(finalGeneralAmount || 0).toLocaleString("en-IN")}</>
                         )}
                     </button>
                 </div>
