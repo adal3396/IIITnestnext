@@ -7,15 +7,7 @@ import {
     Settings,
     LogOut,
     Shield,
-    Database,
-    HeartPulse,
-    Briefcase,
-    MessageSquare,
-    ShieldCheck,
-    ShieldAlert,
-    BarChart3,
-    IndianRupee,
-    Megaphone,
+    Database
 } from "lucide-react";
 
 export default function SuperAdminDashboardLayout({
@@ -26,7 +18,7 @@ export default function SuperAdminDashboardLayout({
     return (
         <div className="min-h-screen bg-gray-50 flex">
             {/* Sidebar Navigation */}
-            <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex">
+            <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex">
                 <div className="h-16 flex items-center px-6 border-b border-slate-800">
                     <Link href="/" className="text-xl font-bold text-white flex items-center gap-2">
                         <Shield className="w-6 h-6 text-amber-500" />
@@ -34,74 +26,35 @@ export default function SuperAdminDashboardLayout({
                     </Link>
                 </div>
 
-                <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 pb-2">Overview</p>
-                    <Link href="/portals/admin" className="flex items-center gap-3 px-3 py-2 text-white bg-slate-800 rounded-lg font-medium">
+                <nav className="flex-1 px-4 py-6 space-y-2">
+                    <Link href="/admin" className="flex items-center gap-3 px-3 py-2 text-white bg-slate-800 rounded-lg font-medium">
                         <LayoutDashboard className="w-5 h-5 text-amber-500" />
                         Global Overview
                     </Link>
-
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 pt-4 pb-2">Moderation</p>
-                    <Link href="/portals/admin/verification" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <ShieldCheck className="w-5 h-5" />
-                        Verification Queue
-                    </Link>
-                    <Link href="/portals/admin/medical-cases" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <HeartPulse className="w-5 h-5" />
-                        Medical Cases
-                    </Link>
-                    <Link href="/portals/admin/ai-audit" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <Activity className="w-5 h-5" />
-                        AI Bias Audit
-                    </Link>
-
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 pt-4 pb-2">Management</p>
-                    <Link href="/portals/admin/opportunities" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <Briefcase className="w-5 h-5" />
-                        Opportunities CMS
-                    </Link>
-                    <Link href="/portals/admin/disputes" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <MessageSquare className="w-5 h-5" />
-                        Disputes &amp; Support
-                    </Link>
-                    <Link href="/portals/admin/donors" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <HeartHandshake className="w-5 h-5" />
-                        Donors &amp; Funds
-                    </Link>
-                    <Link href="/portals/admin/orphanages" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                    <Link href="/admin/orphanages" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
                         <Building2 className="w-5 h-5" />
                         Orphanages
                     </Link>
-
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 pt-4 pb-2">Security &amp; Intelligence</p>
-                    <Link href="/portals/admin/security" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <ShieldAlert className="w-5 h-5 text-red-400" />
-                        Fraud Detection
+                    <Link href="/admin/donors" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                        <HeartHandshake className="w-5 h-5" />
+                        Donors & Funds
                     </Link>
-                    <Link href="/portals/admin/analytics" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <BarChart3 className="w-5 h-5" />
-                        Platform Analytics
+                    <Link href="/admin/ai-audit" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                        <Activity className="w-5 h-5" />
+                        AI Bias Audit
                     </Link>
-                    <Link href="/portals/admin/finance" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <IndianRupee className="w-5 h-5" />
-                        Financial Ledger
-                    </Link>
-                </nav>
-
-                <div className="p-4 border-t border-slate-800 space-y-1">
-                    <Link href="/portals/admin/settings" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <Settings className="w-5 h-5" />
-                        Platform Settings
-                    </Link>
-                    <Link href="/portals/admin/settings" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
-                        <Megaphone className="w-5 h-5" />
-                        Announcements
-                    </Link>
-                    <Link href="/portals/admin/settings" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                    <Link href="/admin/database" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
                         <Database className="w-5 h-5" />
                         Data Export
                     </Link>
-                    <Link href="/" className="flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                </nav>
+
+                <div className="p-4 border-t border-slate-800 space-y-2">
+                    <Link href="/admin/settings" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                        <Settings className="w-5 h-5" />
+                        Platform Settings
+                    </Link>
+                    <Link href="/" className="flex items-center gap-3 px-3 py-2 text-red-400 hover:bg-slate-800 rounded-lg font-medium transition-colors mt-auto">
                         <LogOut className="w-5 h-5" />
                         Sign Out
                     </Link>
