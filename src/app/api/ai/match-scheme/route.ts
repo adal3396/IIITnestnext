@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { groq } from "@/lib/groq";
 import { sanitizeChildProfile, assertNoPII } from "@/lib/sanitize";
+import { logAIAudit } from "@/lib/audit";
 
 // -------------------------------------------------------------------
 // Types
@@ -320,6 +321,16 @@ Respond ONLY in valid JSON:
     }));
 
     const topPriority = matchedSchemes.find((m) => m.application_priority === "immediate");
+
+    // Stage 3: Fire-and-forget async audit log
+    void logAIAudit({
+      agent_name: "Scheme Matcher Agent",
+      action_type: "scheme_eligibility",
+      input_snapshot: sanitizedProfile,
+      output_snapshot: { matched: matchedSchemes.map(m => m.scheme_id), total: matchedSchemes.length },
+      reasoning: `Evaluated ${SCHEME_RULES.length} schemes. Matched ${matchedSchemes.length} schemes with score >= 40.`,
+      dpdp_compliant: true,
+    });
 
     return NextResponse.json({
       matched_schemes: matchedSchemes,

@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { groq } from "@/lib/groq";
 import { supabase } from "@/lib/supabase";
 import { sanitizeText } from "@/lib/sanitize";
+import { logAIAudit } from "@/lib/audit";
 
 // -------------------------------------------------------------------
 // Types
@@ -181,13 +182,25 @@ Provide 2-4 recommendations, ordered by urgency. If a budget is provided, sum su
 
     const aiResult = JSON.parse(rawResponse);
 
-    return NextResponse.json({
+    const response: AdvisorResponse = {
       recommendations: Array.isArray(aiResult.recommendations) ? aiResult.recommendations : [],
       summary: String(aiResult.summary || ""),
       impact_headline: String(aiResult.impact_headline || ""),
       data_source: source,
       dpdp_compliant: true,
-    } as AdvisorResponse, { status: 200 });
+    };
+
+    // Stage 3: Fire-and-forget async audit log
+    void logAIAudit({
+      agent_name: "Philanthropy Advisor Agent",
+      action_type: "donor_guidance",
+      input_snapshot: { intent: sanitizedIntent, budget: body.budget_inr, source },
+      output_snapshot: { recommendations: response.recommendations.map(r => r.category) },
+      reasoning: `Base data source: ${source}. Summary: ${response.summary}`,
+      dpdp_compliant: true,
+    });
+
+    return NextResponse.json(response, { status: 200 });
 
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error.";

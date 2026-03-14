@@ -21,6 +21,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { groq } from "@/lib/groq";
 import { sanitizeChildProfile, assertNoPII } from "@/lib/sanitize";
+import { logAIAudit } from "@/lib/audit";
 
 // -------------------------------------------------------------------
 // Request & Response Types
@@ -280,6 +281,16 @@ Respond ONLY in valid JSON:
       recommendations: Array.isArray(aiResult.recommendations) ? aiResult.recommendations : [],
       dpdp_compliant: true,
     };
+
+    // Stage 3: Fire-and-forget async audit log
+    void logAIAudit({
+      agent_name: "Predictive Risk Agent",
+      action_type: "risk_scoring",
+      input_snapshot: sanitizedProfile,
+      output_snapshot: { score: scores.total, level: response.risk_level, factors: flags },
+      reasoning: response.reasoning,
+      dpdp_compliant: true,
+    });
 
     return NextResponse.json(response, { status: 200 });
   } catch (err) {
