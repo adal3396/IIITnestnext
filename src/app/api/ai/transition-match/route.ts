@@ -21,6 +21,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { groq } from "@/lib/groq";
 import { sanitizeChildProfile, assertNoPII } from "@/lib/sanitize";
+import { logAIAudit } from "@/lib/audit";
 
 // -------------------------------------------------------------------
 // Skills Vocabulary (15+ categories per Kasi.pdf spec)
@@ -349,7 +350,7 @@ Rules: Be encouraging, practical, and India-specific. Never reference personal i
       next_steps: aiResult.next_steps?.[op.id] ?? "Contact your orphanage case worker to apply.",
     }));
 
-    return NextResponse.json({
+    const response: TransitionMatchResponse = {
       matches,
       total_matches: matches.length,
       top_recommendation: matches[0]?.title ?? null,
@@ -358,7 +359,19 @@ Rules: Be encouraging, practical, and India-specific. Never reference personal i
         : [],
       opt_in_confirmed: true,
       dpdp_compliant: true,
-    } as TransitionMatchResponse, { status: 200 });
+    };
+
+    // Stage 3: Fire-and-forget async audit log
+    void logAIAudit({
+      agent_name: "Transition Matcher Agent",
+      action_type: "opportunity_matching",
+      input_snapshot: { age: youthAge, skills: youthSkills, education: youthEducation, opt_in: true },
+      output_snapshot: { matched_opportunities: matches.map(m => m.opportunity_id) },
+      reasoning: `Vector-matched ${matches.length} opportunities. Top match: ${response.top_recommendation || "None"}`,
+      dpdp_compliant: true,
+    });
+
+    return NextResponse.json(response, { status: 200 });
 
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error.";
