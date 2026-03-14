@@ -41,17 +41,39 @@ CREATE TABLE IF NOT EXISTS medical_cases (
 );
 
 -- -----------------------------------------------
--- 3. AI Audit Logs (written by AI engine dev)
+-- 3. AI Audit Logs (Stage 3: DPDP Compliant)
 -- -----------------------------------------------
 CREATE TABLE IF NOT EXISTS ai_audit_logs (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    model TEXT NOT NULL,
-    action TEXT NOT NULL,
-    demographic TEXT,
-    confidence INTEGER CHECK (confidence BETWEEN 0 AND 100),
-    status TEXT NOT NULL DEFAULT 'Fair' CHECK (status IN ('Fair', 'Flagged')),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    agent_name VARCHAR(100) NOT NULL,           -- e.g., 'Predictive Risk Agent'
+    action_type VARCHAR(100) NOT NULL,          -- e.g., 'risk_scoring'
+    input_snapshot JSONB NOT NULL,              -- Sanitized input (NO PII)
+    output_snapshot JSONB NOT NULL,             -- The AI's decision
+    reasoning TEXT,                             -- The explainable output string
+    dpdp_compliant BOOLEAN NOT NULL DEFAULT true,
+    human_override_applied BOOLEAN DEFAULT false,
+    human_reviewer_id UUID REFERENCES auth.users(id),
+    review_notes TEXT
 );
+
+-- RLS Policies (Super Admin Only)
+ALTER TABLE public.ai_audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- Allow the backend service role or authenticated service to insert logs
+CREATE POLICY "Enable insert for authenticated backend" ON public.ai_audit_logs
+    FOR INSERT 
+    WITH CHECK (true);
+
+-- Only Super Admins can select/view the logs
+CREATE POLICY "Enable read for Super Admins only" ON public.ai_audit_logs
+    FOR SELECT
+    USING ( (auth.jwt() -> 'user_metadata' ->> 'role') = 'superadmin' );
+
+-- Index for querying by agent and time
+CREATE INDEX IF NOT EXISTS idx_ai_audit_agent ON public.ai_audit_logs(agent_name);
+CREATE INDEX IF NOT EXISTS idx_ai_audit_created_at ON public.ai_audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_audit_dpdp ON public.ai_audit_logs(dpdp_compliant);
 
 -- -----------------------------------------------
 -- 4. Transition Opportunities (CMS)
@@ -113,11 +135,11 @@ INSERT INTO medical_cases (child_alias, orphanage_name, condition, target_amount
 ('Child C (Age 5)', 'Green Valley Home, Bangalore', 'Kidney Transplant', 800000, 'Critical', 'Hospital Letter Verified');
 
 -- AI Audit Logs
-INSERT INTO ai_audit_logs (model, action, demographic, confidence, status) VALUES
-('Scheme Eligibility Engine', 'Recommended PM CARES for Child #A19F', 'State: Bihar | Age: 14', 94, 'Fair'),
-('Donor Matchmaking', 'Matched Donor #D4892 to Hope House, Mumbai', 'Region: Western India', 88, 'Fair'),
-('Careleavers Job Matchmaker', 'Matched Careleaver #CL221 to Tech Opportunity', 'State: Tamil Nadu | Gender: Female', 71, 'Flagged'),
-('Fraud Detection', 'Flagged registration IP cluster from UP region', 'State: Uttar Pradesh', 89, 'Fair');
+INSERT INTO ai_audit_logs (agent_name, action_type, input_snapshot, output_snapshot, reasoning, dpdp_compliant) VALUES
+('Scheme Matcher Agent', 'scheme_eligibility', '{"age": 14, "orphan_type": "double_orphan"}', '{"matched": ["pm_cares_children"]}', 'Evaluated 7 schemes. Matched 1 schemes with score >= 40.', true),
+('Philanthropy Advisor Agent', 'donor_guidance', '{"intent": "support education", "budget": 10000}', '{"recommendations": ["Education"]}', 'Base data source: live_supabase. Directed funds to active ITI training gaps.', true),
+('Transition Matcher Agent', 'opportunity_matching', '{"age": 18, "skills": ["retail_sales"]}', '{"matched_opportunities": ["op_retail_001"]}', 'Vector-matched 3 opportunities. Top match: Retail Store Assistant', true),
+('Predictive Risk Agent', 'risk_scoring', '{"avg_grade_percent": 35, "consecutive_absences": 12}', '{"score": 85, "level": "critical"}', 'High risk due to critical attendance drop and failing grades.', true);
 
 -- Transition Opportunities
 INSERT INTO transition_opportunities (type, title, partner, location, eligibility, ai_matches, active) VALUES
