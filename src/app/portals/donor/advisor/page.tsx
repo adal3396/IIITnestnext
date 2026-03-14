@@ -140,7 +140,7 @@ export default function AIAdvisorPage() {
                                                 <p className="text-xs text-gray-500">{s.category}</p>
                                             </div>
                                             <Link
-                                                href="/portals/donor/donate"
+                                                href={`/portals/donor/donate?amount=${s.amount}&category=${encodeURIComponent(s.category)}`}
                                                 aria-label={`Donate ₹${s.amount} towards ${s.category}`}
                                                 className="flex items-center gap-1.5 bg-teal-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-teal-700 transition-colors flex-shrink-0"
                                             >

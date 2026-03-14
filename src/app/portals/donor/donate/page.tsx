@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     HeartHandshake,
     AlertCircle,
@@ -66,6 +66,23 @@ export default function DonatePage() {
     const [amount, setAmount] = useState(1000);
     const [customAmount, setCustomAmount] = useState("");
     const [frequency, setFrequency] = useState(FREQUENCIES[0]);
+
+    // Pre-fill amount from AI Advisor suggestions if passed via URL
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const amountParam = params.get("amount");
+        if (amountParam) {
+            const parsed = parseInt(amountParam.replace(/,/g, ""));
+            if (!isNaN(parsed)) {
+                if (AMOUNTS.includes(parsed)) {
+                    setAmount(parsed);
+                } else {
+                    setAmount(0); // Clear selected fixed amount
+                    setCustomAmount(parsed.toString()); // Use custom amount input
+                }
+            }
+        }
+    }, []);
     const [consent, setConsent] = useState(false);
     const [sponsorLoading, setSponsorLoading] = useState(false);
     const [sponsorResult, setSponsorResult] = useState<DonateResult | null>(null);
