@@ -28,10 +28,31 @@ const INITIAL_MESSAGE: Message = {
 };
 
 export default function AIAdvisorPage() {
-    const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    // Hydrate chat history from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem("donor_advisor_chat");
+        if (saved) {
+            try {
+                setMessages(JSON.parse(saved));
+            } catch {
+                setMessages([INITIAL_MESSAGE]);
+            }
+        } else {
+            setMessages([INITIAL_MESSAGE]);
+        }
+    }, []);
+
+    // Persist chat history to localStorage whenever it changes
+    useEffect(() => {
+        if (messages.length > 0) {
+            localStorage.setItem("donor_advisor_chat", JSON.stringify(messages));
+        }
+    }, [messages]);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
