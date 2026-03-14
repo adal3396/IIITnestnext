@@ -7,7 +7,12 @@ import {
     Settings,
     LogOut,
     AlertTriangle,
-    ShieldCheck
+    ShieldCheck,
+    PackageSearch,
+    FileText as FileTextIcon,
+    Users as UsersIcon,
+    Sparkles,
+    UserPlus
 } from "lucide-react";
 
 export default function OrphanageDashboardLayout({
@@ -26,21 +31,36 @@ export default function OrphanageDashboardLayout({
                 </div>
 
                 <nav className="flex-1 px-4 py-6 space-y-2">
-                    <Link href="/orphanage" className="flex items-center gap-3 px-3 py-2 text-purple-700 bg-purple-50 rounded-lg font-medium">
+                    <Link href="/portals/orphanage" className="flex items-center gap-3 px-3 py-2 text-purple-700 bg-purple-50 rounded-lg font-medium">
                         <LayoutDashboard className="w-5 h-5" />
                         Overview
                     </Link>
-                    <Link href="/orphanage/children" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/orphanage/children" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <Users className="w-5 h-5" />
                         Child Roster
                     </Link>
-                    <Link href="/orphanage/documents" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/orphanage/documents" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <FileText className="w-5 h-5" />
                         Document Hub
                     </Link>
-                    <Link href="/orphanage/transition" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/orphanage/transition" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <GraduationCap className="w-5 h-5" />
                         Transition Planning
+                    </Link>
+                    <div className="pt-4 pb-2">
+                        <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Extra Features</p>
+                    </div>
+                    <Link href="/portals/orphanage/inventory" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                        <PackageSearch className="w-5 h-5" />
+                        Inventory & Needs
+                    </Link>
+                    <Link href="/portals/orphanage/reports" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                        <Sparkles className="w-5 h-5" />
+                        Automated Reports
+                    </Link>
+                    <Link href="/portals/orphanage/volunteers" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                        <UserPlus className="w-5 h-5" />
+                        Volunteers
                     </Link>
                 </nav>
 
@@ -49,7 +69,7 @@ export default function OrphanageDashboardLayout({
                         <ShieldCheck className="w-4 h-4 text-green-500" />
                         DPDP Compliant
                     </div>
-                    <Link href="/orphanage/settings" className="flex items-center gap-3 w-full px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/orphanage/settings" className="flex items-center gap-3 w-full px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <Settings className="w-5 h-5" />
                         Settings
                     </Link>
