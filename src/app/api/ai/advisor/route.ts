@@ -1,3 +1,4 @@
+
 /**
  * POST /api/ai/advisor
  *
@@ -205,6 +206,8 @@ Provide 2-4 recommendations, ordered by urgency. If a budget is provided, sum su
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error.";
     console.error("[advisor] Error:", message);
-    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+    return NextResponse.json({
+      reply: "I'm currently unable to generate advice. Please try again shortly.",
+    });
   }
 }
