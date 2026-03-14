@@ -5,7 +5,7 @@ import { Send, Bot, User, Loader2, HeartHandshake } from "lucide-react";
 import Link from "next/link";
 
 type Message = { role: "user" | "assistant"; content: string };
-type SuggestedDonation = { amount: string; category: string };
+type SuggestedDonation = { amount: string; category: string; childAlias?: string };
 
 function parseDonationToken(text: string): {
     cleaned: string;
@@ -13,8 +13,12 @@ function parseDonationToken(text: string): {
 } {
     const suggestions: SuggestedDonation[] = [];
     const cleaned = text
-        .replace(/\[DONATE:(\d+):([^\]]+)\]/g, (_, amount, category) => {
-            suggestions.push({ amount, category });
+        .replace(/\[\s*DONATE:\s*(\d+)\s*:\s*([^:\]]+)\s*(?::\s*([^\]]*)\s*)?\]/g, (_, amount, category, childAlias) => {
+            suggestions.push({ 
+                amount: amount.trim(), 
+                category: category.trim(), 
+                childAlias: childAlias ? childAlias.trim() : undefined 
+            });
             return "";
         })
         .trim();
@@ -80,9 +84,10 @@ export default function AIAdvisorPage() {
             let replyContent = data.summary || "Here are some impactful ways to support our children.";
             if (data.recommendations && data.recommendations.length > 0) {
                 data.recommendations.forEach((r: any) => {
-                    // Default to 5000 INR if the LLM didn't suggest a specific amount
                     const amount = r.suggested_amount_inr || 5000; 
-                    replyContent += ` [DONATE:${amount}:${r.category}]`;
+                    // Optionally include a child alias if the backend suggests one
+                    const childAlias = r.child_alias || "";
+                    replyContent += ` [DONATE:${amount}:${r.category}${childAlias ? ":" + childAlias : ""}]`;
                 });
             }
 
@@ -158,11 +163,11 @@ export default function AIAdvisorPage() {
                                                 <p className="text-gray-800 font-bold text-lg">
                                                     ₹ {parseInt(s.amount).toLocaleString("en-IN")}
                                                 </p>
-                                                <p className="text-xs text-gray-500">{s.category}</p>
+                                                <p className="text-xs text-gray-500">{s.category}{s.childAlias && <> · <span className="font-medium text-teal-700">{s.childAlias}</span></>}</p>
                                             </div>
                                             <Link
-                                                href={`/portals/donor/donate?amount=${s.amount}&category=${encodeURIComponent(s.category)}`}
-                                                aria-label={`Donate ₹${s.amount} towards ${s.category}`}
+                                                href={`/portals/donor/donate?amount=${s.amount}&category=${encodeURIComponent(s.category)}${s.childAlias ? "&child=" + encodeURIComponent(s.childAlias) : ""}`}
+                                                aria-label={`Donate ₹${s.amount} towards ${s.category}${s.childAlias ? " for " + s.childAlias : ""}`}
                                                 className="flex items-center gap-1.5 bg-teal-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-teal-700 transition-colors flex-shrink-0"
                                             >
                                                 <HeartHandshake className="w-3.5 h-3.5" />
