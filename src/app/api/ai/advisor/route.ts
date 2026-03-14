@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /**
  * POST /api/ai/advisor
  *
@@ -208,49 +207,4 @@ Provide 2-4 recommendations, ordered by urgency. If a budget is provided, sum su
     console.error("[advisor] Error:", message);
     return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
-=======
-import { NextRequest, NextResponse } from "next/server";
-import { groq } from "@/lib/groq";
-
-const SYSTEM_PROMPT = `You are the NextNest Philanthropy AI Advisor — a warm, knowledgeable guide helping donors make impactful contributions to orphanages and children's welfare programs.
-
-Your responsibilities:
-- Recommend donation categories (Medical, Education, Supplies, Welfare) based on the donor's goals.
-- Explain how funds are allocated with full transparency.
-- Suggest appropriate donation amounts.
-- Strictly protect child privacy: never reference identifiable children — use anonymised references only (e.g. "Case #A12", "Child B").
-- Comply with DPDP Act 2023 and JJ Act 2015 principles at all times.
-
-When recommending a specific donation, embed a structured token in your response:
-[DONATE:amount:category]
-Example: [DONATE:2000:Education]
-
-Keep responses concise, warm, and encouraging. Limit to 3–4 sentences.`;
-
-export async function POST(request: NextRequest) {
-    try {
-        const { messages } = await request.json();
-
-        const completion = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-                { role: "system", content: SYSTEM_PROMPT },
-                ...messages,
-            ],
-            max_tokens: 512,
-            temperature: 0.7,
-        });
-
-        const reply =
-            completion.choices[0]?.message?.content ??
-            "I'm here to help! Could you tell me more about how you'd like to contribute?";
-
-        return NextResponse.json({ reply });
-    } catch (error) {
-        console.error("[AI Advisor] Groq request failed:", error);
-        return NextResponse.json({
-            reply: "I'm currently unable to generate advice. Please try again shortly.",
-        });
-    }
->>>>>>> 3ac8ac9 (feat(donor): implement full donor portal with AI advisor, donations, history, settings)
 }
