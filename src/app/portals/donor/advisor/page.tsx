@@ -48,11 +48,26 @@ export default function AIAdvisorPage() {
             const res = await fetch("/api/ai/advisor", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: updated }),
+                body: JSON.stringify({ donor_intent: text }),
             });
             const data = await res.json();
-            setMessages([...updated, { role: "assistant", content: data.reply }]);
-        } catch {
+
+            if (data.error) throw new Error(data.error);
+
+            // Our Stage 2 backend returns structured JSON { summary, recommendations }
+            // We convert it back into the token format the frontend UI knows how to render
+            let replyContent = data.summary || "Here are some impactful ways to support our children.";
+            if (data.recommendations && data.recommendations.length > 0) {
+                data.recommendations.forEach((r: any) => {
+                    // Default to 5000 INR if the LLM didn't suggest a specific amount
+                    const amount = r.suggested_amount_inr || 5000; 
+                    replyContent += ` [DONATE:${amount}:${r.category}]`;
+                });
+            }
+
+            setMessages([...updated, { role: "assistant", content: replyContent }]);
+        } catch (error) {
+            console.error("AI fetch error:", error);
             setMessages([
                 ...updated,
                 {
