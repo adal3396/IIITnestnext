@@ -28,8 +28,8 @@ A unified Next.js platform bridging care gaps, connecting donors, orphanages, an
 
 ### 2. Clone the repository
 ```bash
-git clone https://github.com/adal3396/IIITHack.git
-cd IIITHack
+git clone https://github.com/adal3396/IIITnestnext.git
+cd IIITnestnext
 ```
 
 ### 3. Install dependencies
