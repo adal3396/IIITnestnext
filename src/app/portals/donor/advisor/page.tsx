@@ -13,8 +13,12 @@ function parseDonationToken(text: string): {
 } {
     const suggestions: SuggestedDonation[] = [];
     const cleaned = text
-        .replace(/\[DONATE:(\d+):([^:]+):?([^\]]*)\]/g, (_, amount, category, childAlias) => {
-            suggestions.push({ amount, category, childAlias: childAlias || undefined });
+        .replace(/\[\s*DONATE:\s*(\d+)\s*:\s*([^:\]]+)\s*(?::\s*([^\]]*)\s*)?\]/g, (_, amount, category, childAlias) => {
+            suggestions.push({ 
+                amount: amount.trim(), 
+                category: category.trim(), 
+                childAlias: childAlias ? childAlias.trim() : undefined 
+            });
             return "";
         })
         .trim();
