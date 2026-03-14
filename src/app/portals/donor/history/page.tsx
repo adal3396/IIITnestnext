@@ -119,9 +119,16 @@ function downloadReceipt(c: Contribution) {
         20, bottomY + 8
     );
 
-    // Footer Address
-    doc.setTextColor(45, 122, 115);
-    doc.text("www.nextnest.org\n123 Innovation Drive\nBengaluru, KA 560001\n+91 98765 43210", 105, bottomY + 25, { align: "center" });
+    // Footer Additional Info
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+        "NextNest Foundation (Section 8 NGO)\n" +
+        "New Delhi, India 110001\n" +
+        "contact@nextnest.org | 1800-NEXTNEST\n" +
+        "This is a system-generated electronic receipt.",
+        105, bottomY + 25, { align: "center" }
+    );
 
     doc.save(`nextnest-receipt-${c.id}.pdf`);
 }
