@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Download, CheckCircle, RefreshCw, Filter, History } from "lucide-react";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 type Category = "Medical" | "Education" | "Supplies" | "Welfare";
 type Status = "Completed" | "Recurring";
@@ -68,7 +68,7 @@ function downloadReceipt(c: Contribution) {
     doc.text("Tax ID: 12-3456789", 20, 74);
 
     // Table 1: Donor Info
-    (doc as any).autoTable({
+    autoTable(doc, {
         startY: 85,
         theme: 'grid',
         styles: { fontSize: 10, cellPadding: 3, textColor: [0, 0, 0] },
@@ -86,8 +86,8 @@ function downloadReceipt(c: Contribution) {
     });
 
     // Table 2: Donation Details
-    const finalY = (doc as any).lastAutoTable.finalY || 135;
-    (doc as any).autoTable({
+    const finalY = (doc as any).lastAutoTable?.finalY || 135;
+    autoTable(doc, {
         startY: finalY + 15,
         theme: 'grid',
         styles: { fontSize: 10, cellPadding: 3, textColor: [0, 0, 0] },
