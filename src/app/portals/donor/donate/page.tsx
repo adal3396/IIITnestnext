@@ -81,14 +81,25 @@ export default function DonatePage() {
     const finalAmount = customAmount ? parseInt(customAmount) : amount;
     const finalGeneralAmount = generalCustomAmount ? parseInt(generalCustomAmount) : generalAmount;
 
-    // Pre-fill amount from AI Advisor suggestions if passed via URL
+    // Pre-fill amount/category/child from AI Advisor suggestions if passed via URL
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const amountParam = params.get("amount");
         const categoryParam = params.get("category");
+        const childParam = params.get("child");
         let activeTab: Tab = "sponsor";
 
-        if (categoryParam) {
+        // If a specific child was suggested, always go to "Sponsor a Child"
+        if (childParam) {
+            const matchedChild = childAliases.find(
+                (alias) => alias.toLowerCase() === childParam.toLowerCase()
+            );
+            if (matchedChild) {
+                setSelectedChild(matchedChild);
+            }
+            activeTab = "sponsor";
+            setTab("sponsor");
+        } else if (categoryParam) {
             const lowerCat = categoryParam.toLowerCase();
             if (lowerCat.includes("medical") || lowerCat.includes("illness") || lowerCat.includes("health") || lowerCat.includes("surgery")) {
                 activeTab = "illness";
@@ -106,12 +117,19 @@ export default function DonatePage() {
         if (amountParam) {
             const parsed = parseInt(amountParam.replace(/,/g, ""));
             if (!isNaN(parsed)) {
-                if (activeTab === "sponsor" || activeTab === "illness") {
+                if (activeTab === "sponsor") {
                     if (AMOUNTS.includes(parsed)) {
                         setAmount(parsed);
                     } else {
-                        setAmount(0); // Clear selected fixed amount
-                        setCustomAmount(parsed.toString()); // Use custom amount input
+                        setAmount(0);
+                        setCustomAmount(parsed.toString());
+                    }
+                } else if (activeTab === "illness") {
+                    if (AMOUNTS.includes(parsed)) {
+                        setAmount(parsed);
+                    } else {
+                        setAmount(0);
+                        setCustomAmount(parsed.toString());
                     }
                 } else if (activeTab === "general") {
                     if (AMOUNTS.includes(parsed)) {
