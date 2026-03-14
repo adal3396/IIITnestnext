@@ -1,0 +1,33 @@
+﻿src/app/portals/admin/page.tsx(1,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(39,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(44,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(52,151): error TS1005: '</' expected.
+src/app/portals/admin/page.tsx(53,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(55,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(57,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(58,21): error TS1434: Unexpected keyword or identifier.
+src/app/portals/admin/page.tsx(59,17): error TS1128: Declaration or statement expected.
+src/app/portals/admin/page.tsx(60,13): error TS1109: Expression expected.
+src/app/portals/admin/page.tsx(62,83): error TS1005: '</' expected.
+src/app/portals/admin/page.tsx(63,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(78,13): error TS1128: Declaration or statement expected.
+src/app/portals/admin/page.tsx(190,1): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(190,2): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(190,3): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(190,4): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(190,5): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(190,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(190,7): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(197,185): error TS1005: '</' expected.
+src/app/portals/admin/page.tsx(198,1): error TS1185: Merge conflict marker encountered.
+src/app/portals/admin/page.tsx(223,1): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(223,2): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(223,3): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(223,4): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(223,5): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(223,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(223,7): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/app/portals/admin/page.tsx(226,17): error TS1128: Declaration or statement expected.
+src/app/portals/admin/page.tsx(227,13): error TS1109: Expression expected.
+src/app/portals/admin/page.tsx(228,9): error TS1109: Expression expected.
+src/app/portals/admin/page.tsx(229,5): error TS1109: Expression expected.
