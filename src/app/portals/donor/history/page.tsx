@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Download, CheckCircle, RefreshCw, Filter, History } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 type Category = "Medical" | "Education" | "Supplies" | "Welfare";
 type Status = "Completed" | "Recurring";
@@ -35,36 +37,93 @@ const categoryStyle: Record<Category, string> = {
 };
 
 function downloadReceipt(c: Contribution) {
-    const dateStr = new Date(c.date).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
-    const lines = [
-        "=".repeat(52),
-        "         NEXTNEST DONATION RECEIPT",
-        "=".repeat(52),
-        "",
-        `Transaction ID : ${c.id}`,
-        `Date           : ${dateStr}`,
-        `Description    : ${c.description}`,
-        `Beneficiary    : ${c.beneficiary}`,
-        `Category       : ${c.category}`,
-        `Amount         : ₹${c.amount.toLocaleString("en-IN")}`,
-        `Status         : ${c.status}`,
-        "",
-        "-".repeat(52),
-        "Platform       : NextNest Unified Donor Platform",
-        "Compliance     : DPDP Act 2023 · JJ Act 2015",
-        "Privacy        : Privacy-First · No Child PII stored",
-        "-".repeat(52),
-        "",
-        "Thank you for your generous contribution.",
-        "Your support makes a lasting difference.",
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `nextnest-receipt-${c.id}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const doc = new jsPDF();
+    const dateStr = new Date(c.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }).toUpperCase();
+    
+    // Header
+    doc.setTextColor(45, 122, 115); // Teal color matching UI
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("NEXTNEST", 105, 20, { align: "center" });
+    
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("Transparency & Care for Every Child.", 105, 28, { align: "center" });
+
+    // Title
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("DONATION RECEIPT", 20, 50);
+
+    // Date & Tax Info
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(`DATE: ${dateStr}`, 20, 60);
+
+    doc.setFont("helvetica", "normal");
+    doc.text("NextNest is a registered Section 8 Nonprofit Organization.", 20, 68);
+    doc.setFont("helvetica", "bold");
+    doc.text("Tax ID: 12-3456789", 20, 74);
+
+    // Table 1: Donor Info
+    (doc as any).autoTable({
+        startY: 85,
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 3, textColor: [0, 0, 0] },
+        columnStyles: { 
+            0: { cellWidth: 40, fillColor: [200, 225, 230], fontStyle: 'bold' },
+            1: { cellWidth: 130 }
+        },
+        body: [
+            ['DONOR NAME', 'Anonymous Donor'], // Replace with actual context if available
+            ['ADDRESS', 'N/A (Digital Receipt)'],
+            ['CITY', 'Bengaluru'],
+            ['STATE', 'Karnataka'],
+            ['PHONE', '[Protected per DPDP Act]'],
+        ],
+    });
+
+    // Table 2: Donation Details
+    const finalY = (doc as any).lastAutoTable.finalY || 135;
+    (doc as any).autoTable({
+        startY: finalY + 15,
+        theme: 'grid',
+        styles: { fontSize: 10, cellPadding: 3, textColor: [0, 0, 0] },
+        columnStyles: { 
+            0: { cellWidth: 40, fillColor: [200, 225, 230], fontStyle: 'bold' },
+            1: { cellWidth: 130 }
+        },
+        body: [
+            ['DONATION DATE', dateStr],
+            ['PAYMENT METHOD', 'Online Transfer'],
+            ['VALUE', `INR ${c.amount.toLocaleString("en-IN")}.00`],
+            ['DESCRIPTION', c.description],
+            ['BENEFICIARY', c.beneficiary],
+            ['CATEGORY', c.category],
+        ],
+    });
+
+    // Footer Thank You message
+    const bottomY = (doc as any).lastAutoTable.finalY + 20;
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "normal");
+    doc.text("Thank you for supporting our mission!", 20, bottomY);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    doc.text(
+        "Your contribution will help us continue our efforts to transform the orphanage\n" +
+        "ecosystem by providing verified resources and care.",
+        20, bottomY + 8
+    );
+
+    // Footer Address
+    doc.setTextColor(45, 122, 115);
+    doc.text("www.nextnest.org\n123 Innovation Drive\nBengaluru, KA 560001\n+91 98765 43210", 105, bottomY + 25, { align: "center" });
+
+    doc.save(`nextnest-receipt-${c.id}.pdf`);
 }
 
 export default function HistoryPage() {
