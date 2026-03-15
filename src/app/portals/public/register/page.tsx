@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Heart, Building2 } from "lucide-react";
+import { Heart, Building2, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const ROLES = [
@@ -25,6 +25,14 @@ const ROLES = [
 ];
 
 export default function RegisterPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-blue-900" /></div>}>
+            <RegisterPageInner />
+        </Suspense>
+    );
+}
+
+function RegisterPageInner() {
     const searchParams = useSearchParams();
     const defaultRole = searchParams.get("role") === "orphanage" ? "orphanage" : "donor";
     const [role, setRole] = useState(defaultRole);
@@ -41,25 +49,30 @@ export default function RegisterPage() {
         setError(null);
         
         try {
-            const { data, error: signUpError } = await supabase.auth.signUp({
-                email: form.email,
-                password: form.password,
-                options: {
-                    data: {
-                        full_name: form.name,
-                        role: role,
-                        organization_name: form.orgName, // Will be empty for donors
-                        consent_given: form.consent
-                    }
-                }
+            const res = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: form.name,
+                    email: form.email,
+                    password: form.password,
+                    role: role,
+                    orgName: form.orgName,
+                    consent: form.consent
+                })
             });
 
-            if (signUpError) {
-                throw signUpError;
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Registration failed");
             }
 
-            // Immediately redirect to the correct portal after successful signup
-            router.push(selectedRole.href);
+            // Immediately redirect to the correct portal after successful registration
+            // Note: Since we are using admin.createUser, the user isn't technically "signed in" on the client yet 
+            // but we can either sign them in manually now or tell them to log in.
+            // For hackathon UX, let's just push to login or try to auto-login.
+            router.push(`/portals/public/login?role=${role}&registered=true`);
         } catch (err: any) {
             setError(err.message || "An error occurred during registration. Please try again.");
         } finally {

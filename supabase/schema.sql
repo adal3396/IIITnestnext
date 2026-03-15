@@ -230,5 +230,50 @@ INSERT INTO transactions_ledger (transaction_ref, donor_name, orphanage_name, am
 INSERT INTO announcements (title, message, target_audience) VALUES
 ('System Maintenance Scheduled', 'NextNest portal will be down for 2 hours on Sunday 2 AM IST for scheduled AI engine upgrades.', 'All'),
 ('New DPDP Compliance Guidelines', 'All orphanage partners must re-verify their data handling protocols by next Friday to maintain ''Active'' status.', 'Orphanages'),
-('Matching Grant Activated!', 'All donations made giving to Medical Campaigns this week will be matched 1:1 by our CSR partners up to ₹ 5,00,000.', 'Donors');
+
+-- ── AI ADVISOR & PORTAL CORE TABLES ────────────────────
+
+-- Children (Anonymised profiles for risk/impact tracking)
+CREATE TABLE IF NOT EXISTS children (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    alias VARCHAR(255) NOT NULL, -- e.g. "Child A", "Rahul S."
+    age INTEGER,
+    gender VARCHAR(50),
+    risk_level VARCHAR(50) DEFAULT 'low', -- low, medium, high, critical
+    is_enrolled_in_school BOOLEAN DEFAULT true,
+    has_health_insurance BOOLEAN DEFAULT true,
+    orphanage_id UUID REFERENCES orphanage_registrations(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Programs (Impact areas for the AI Advisor)
+CREATE TABLE IF NOT EXISTS programs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL, -- Medical, Education, Supplies, Welfare
+    description TEXT,
+    cost_per_beneficiary_inr NUMERIC(12, 2),
+    current_enrollment INTEGER DEFAULT 0,
+    capacity INTEGER,
+    status VARCHAR(50) DEFAULT 'active', -- active, inactive
+    priority INTEGER DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Data for AI Advisor Testing
+INSERT INTO programs (name, category, cost_per_beneficiary_inr, capacity, priority)
+VALUES 
+('Digital Literacy Hub', 'Education', 1500, 100, 10),
+('Critical Care Fund', 'Medical', 5000, 50, 20),
+('Nutritional Support', 'Supplies', 800, 500, 5),
+('Career Mentorship', 'Welfare', 2500, 40, 15)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO children (alias, age, risk_level, is_enrolled_in_school, has_health_insurance)
+VALUES
+('Rahul S.', 12, 'low', true, true),
+('Priya M.', 16, 'medium', true, false),
+('Amit K.', 8, 'high', false, true),
+('Sneha R.', 17, 'critical', true, true)
+ON CONFLICT DO NOTHING;
 

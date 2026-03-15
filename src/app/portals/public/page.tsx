@@ -464,7 +464,7 @@ export default function PublicPortalPage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.2, duration: 0.5 }}
-                        onSubmit={(e) => { e.preventDefault(); alert("Contact form submitted (Simulation)"); }}
+                        onSubmit={(e: React.FormEvent) => { e.preventDefault(); alert("Contact form submitted (Simulation)"); }}
                         className="bg-white rounded-md shadow-sm border border-gray-100 p-8 space-y-5"
                     >
                         <div className="grid sm:grid-cols-2 gap-5">

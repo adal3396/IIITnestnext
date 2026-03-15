@@ -8,15 +8,27 @@ export async function GET() {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error("[Finance API] Supabase Error:", error);
+            throw error;
+        }
         
-        // Calculate aggregations
-        const totalVolume = transactions.reduce((acc, txn) => acc + Number(txn.amount_total), 0);
-        const totalFees = transactions.reduce((acc, txn) => acc + Number(txn.fee_platform), 0);
-        const totalTips = transactions.reduce((acc, txn) => acc + Number(txn.tip_amount), 0);
+        const safeTransactions = transactions || [];
+        
+        // Calculate aggregations with safety fallbacks for both schemas
+        const totalVolume = safeTransactions.reduce((acc, txn) => 
+            acc + (Number(txn.amount_total ?? txn.gross_amount) || 0), 0);
+        
+        const totalFees = safeTransactions.reduce((acc, txn) => 
+            acc + (Number(txn.fee_platform ?? txn.maintenance_fee) || 0), 0);
+            
+        const totalTips = safeTransactions.reduce((acc, txn) => 
+            acc + (Number(txn.tip_amount ?? txn.donor_tip) || 0), 0);
+
+        console.log(`[Finance API] Sync Summary - Volume: ${totalVolume}, Fees: ${totalFees}, Tips: ${totalTips}`);
 
         return NextResponse.json({
-            transactions,
+            transactions: safeTransactions,
             summary: {
                 total_volume: totalVolume,
                 platform_fees: totalFees,
@@ -25,6 +37,7 @@ export async function GET() {
             }
         });
     } catch (error: any) {
+        console.error("[Finance API] Catch Error:", error.message);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
