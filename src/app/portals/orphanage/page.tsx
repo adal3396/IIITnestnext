@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Users, AlertTriangle, ArrowRight, X, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Users, AlertTriangle, ArrowRight, X, Loader2, FileText, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AnnouncementsStrip from "./AnnouncementsStrip";
 
+const DOC_TYPES = ["Aadhaar Card", "Birth Certificate", "Medical Record", "School Certificate", "NGO Reference Letter", "Other"];
+
 type ChildItem = { id: string; alias: string; age: number | null; gender: string | null; risk_level: string };
+type DocEntry = { file: File; docType: string };
 
 export default function OrphanageDashboard() {
     const [orgName, setOrgName] = useState<string | null>(null);
@@ -37,6 +40,23 @@ export default function OrphanageDashboard() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [lastRegistered, setLastRegistered] = useState<{ name: string; dob: string; gender: string; admissionDate: string } | null>(null);
+    const [docEntries, setDocEntries] = useState<DocEntry[]>([]);
+    const docFileInputRef = useRef<HTMLInputElement>(null);
+
+    const addDocument = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setDocEntries((prev) => [...prev, { file, docType: DOC_TYPES[0] }]);
+        e.target.value = "";
+    };
+
+    const removeDocument = (index: number) => {
+        setDocEntries((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const setDocType = (index: number, docType: string) => {
+        setDocEntries((prev) => prev.map((d, i) => (i === index ? { ...d, docType } : d)));
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -68,7 +88,25 @@ export default function OrphanageDashboard() {
                 const err = await res.json();
                 throw new Error(err.error || "Failed to register");
             }
+            const created = await res.json();
+            const childId = created?.id;
+
+            if (childId && docEntries.length > 0 && session?.access_token) {
+                const authHeaders: HeadersInit = { Authorization: `Bearer ${session.access_token}` };
+                for (const { file, docType } of docEntries) {
+                    const fd = new FormData();
+                    fd.set("doc_type", docType);
+                    fd.set("file", file);
+                    await fetch(`/api/orphanage/children/${childId}/documents`, {
+                        method: "POST",
+                        headers: authHeaders,
+                        body: fd,
+                    });
+                }
+            }
+
             setLastRegistered({ name: fullName, dob, gender, admissionDate });
+            setDocEntries([]);
             setIsModalOpen(false);
             setShowToast(true);
             setTimeout(() => setShowToast(false), 3000);
@@ -227,7 +265,8 @@ export default function OrphanageDashboard() {
                         <div className="flex justify-between items-center p-6 border-b border-gray-100">
                             <h3 className="text-xl font-bold text-gray-800">Register New Child</h3>
                             <button 
-                                onClick={() => setIsModalOpen(false)}
+                                type="button"
+                                onClick={() => { setIsModalOpen(false); setDocEntries([]); }}
                                 className="text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 <X className="w-6 h-6" />
@@ -280,6 +319,45 @@ export default function OrphanageDashboard() {
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-hidden"
                                     defaultValue={new Date().toISOString().split('T')[0]}
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Documents (optional)</label>
+                                <div
+                                    onClick={() => docFileInputRef.current?.click()}
+                                    className="border-2 border-dashed border-purple-200 rounded-lg p-4 text-center cursor-pointer hover:bg-purple-50/50 transition-colors"
+                                >
+                                    <FileText className="w-6 h-6 text-purple-400 mx-auto mb-1" />
+                                    <p className="text-sm text-gray-500">Click to add a document</p>
+                                    <p className="text-xs text-gray-400 mt-0.5">PDF, JPG, PNG (max 10MB)</p>
+                                    <input
+                                        ref={docFileInputRef}
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        className="hidden"
+                                        onChange={addDocument}
+                                    />
+                                </div>
+                                {docEntries.length > 0 && (
+                                    <ul className="mt-2 space-y-2">
+                                        {docEntries.map((d, i) => (
+                                            <li key={i} className="flex items-center gap-2 text-sm bg-gray-50 rounded-lg px-3 py-2">
+                                                <FileText className="w-4 h-4 text-purple-500 shrink-0" />
+                                                <span className="truncate flex-1">{d.file.name}</span>
+                                                <select
+                                                    value={d.docType}
+                                                    onChange={(e) => setDocType(i, e.target.value)}
+                                                    className="border border-gray-200 rounded px-2 py-1 text-xs"
+                                                >
+                                                    {DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                                                </select>
+                                                <button type="button" onClick={() => removeDocument(i)} className="p-1 text-red-500 hover:bg-red-50 rounded">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
                             
                             <div className="pt-4 flex gap-3">

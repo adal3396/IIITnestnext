@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Brain, Calendar, GraduationCap, MapPin, User, AlertTriangle, Printer, Settings, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Brain, Calendar, GraduationCap, User, AlertTriangle, Printer, Settings, X, Loader2, FileText, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -17,6 +17,15 @@ type ChildData = {
     created_at?: string;
 };
 
+type ChildDocument = {
+    id: string;
+    doc_type: string;
+    file_name: string;
+    file_size: number | null;
+    status: string;
+    created_at: string;
+};
+
 function riskLevelToScore(level: string): number {
     if (level === "critical") return 75;
     if (level === "high") return 72;
@@ -29,6 +38,7 @@ export default function ChildProfile() {
     const id = typeof params?.id === "string" ? params.id : "";
 
     const [child, setChild] = useState<ChildData | null>(null);
+    const [documents, setDocuments] = useState<ChildDocument[]>([]);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
 
@@ -42,14 +52,20 @@ export default function ChildProfile() {
             const { data: { session } } = await supabase.auth.getSession();
             const headers: HeadersInit = {};
             if (session?.access_token) (headers as Record<string, string>)["Authorization"] = `Bearer ${session.access_token}`;
-            const res = await fetch(`/api/orphanage/children/${id}`, { headers });
-            if (res.status === 404) {
+            const [childRes, docsRes] = await Promise.all([
+                fetch(`/api/orphanage/children/${id}`, { headers }),
+                fetch(`/api/orphanage/children/${id}/documents`, { headers }),
+            ]);
+            if (childRes.status === 404) {
                 setNotFound(true);
                 setChild(null);
+                setDocuments([]);
             } else {
-                const data = await res.json();
+                const data = await childRes.json();
                 setChild(data);
                 setNotFound(false);
+                const docsData = await docsRes.json();
+                setDocuments(Array.isArray(docsData.documents) ? docsData.documents : []);
             }
             setLoading(false);
         };
@@ -312,6 +328,40 @@ export default function ChildProfile() {
                                 ))}
                             </div>
                         </div>
+                    </div>
+
+                    {/* Documents */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-purple-600" /> Documents
+                            </h2>
+                            <Link
+                                href="/portals/orphanage/documents"
+                                className="text-sm font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                            >
+                                Document Hub <ExternalLink className="w-4 h-4" />
+                            </Link>
+                        </div>
+                        {documents.length === 0 ? (
+                            <p className="text-gray-500 text-sm">No documents uploaded yet. Add documents from the Document Hub or when registering a child.</p>
+                        ) : (
+                            <ul className="space-y-2">
+                                {documents.map((doc) => (
+                                    <li key={doc.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="w-4 h-4 text-purple-500" />
+                                            <span className="font-medium text-gray-800">{doc.doc_type}</span>
+                                            <span className="text-gray-500 text-sm">— {doc.file_name}</span>
+                                        </div>
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                            doc.status === "Verified" ? "bg-emerald-50 text-emerald-700" :
+                                            doc.status === "Anomaly Flagged" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
+                                        }`}>{doc.status}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                 </div>
             </div>
