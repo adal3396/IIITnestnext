@@ -160,3 +160,75 @@ INSERT INTO platform_settings (key, label, description, enabled) VALUES
 ('donor_tip', 'Optional Donor Tip (up to 5%)', 'Allow donors to optionally add a tip to support NextNest operations', TRUE),
 ('achievement_portal', 'Public Achievement Portal', 'Allow donor achievements to be shown publicly (privacy-safe)', FALSE),
 ('ai_auto_apply', 'AI Scheme Auto-Application', 'Allow AI to auto-submit pre-approved government scheme applications', TRUE);
+
+-- =============================================
+-- PHASE 2 ADDITIONS (Super Admin Advanced Features)
+-- =============================================
+
+-- -----------------------------------------------
+-- 7. Fraud Alerts & Anomaly Detection
+-- -----------------------------------------------
+CREATE TABLE IF NOT EXISTS fraud_alerts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    type TEXT NOT NULL CHECK (type IN ('Fake Registration', 'Money Laundering Risk', 'Suspicious Login', 'Other')),
+    severity TEXT NOT NULL CHECK (severity IN ('Low', 'Medium', 'High', 'Critical')),
+    description TEXT NOT NULL,
+    ai_confidence INTEGER NOT NULL CHECK (ai_confidence BETWEEN 0 AND 100),
+    metadata JSONB DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'Open' CHECK (status IN ('Open', 'Investigating', 'Resolved', 'False Positive')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- -----------------------------------------------
+-- 8. Global Transactions Ledger
+-- -----------------------------------------------
+CREATE TABLE IF NOT EXISTS transactions_ledger (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    transaction_ref TEXT NOT NULL UNIQUE,
+    donor_id UUID, -- Optional foreign key to auth.users
+    donor_name TEXT NOT NULL,
+    orphanage_id UUID, -- Optional foreign key to orphanage_registrations
+    orphanage_name TEXT NOT NULL,
+    amount_total NUMERIC(12, 2) NOT NULL,
+    amount_orphanage NUMERIC(12, 2) NOT NULL,
+    fee_platform NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    tip_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'Completed',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- -----------------------------------------------
+-- 9. Announcements (Global Communication Hub)
+-- -----------------------------------------------
+CREATE TABLE IF NOT EXISTS announcements (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    target_audience TEXT NOT NULL CHECK (target_audience IN ('All', 'Donors', 'Orphanages', 'Internal Staff')),
+    sent_by TEXT NOT NULL DEFAULT 'Super Admin',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =============================================
+-- PHASE 2 SEED DATA
+-- =============================================
+
+-- Fraud Alerts Seed
+INSERT INTO fraud_alerts (type, severity, description, ai_confidence, status, metadata) VALUES
+('Fake Registration', 'High', 'Multiple registration attempts from blacklisted IP cluster (192.168.x.x) trying to register identical orphanage details.', 94, 'Investigating', '{"ip": "192.168.1.55", "frequency": "5 attempts/hour"}'),
+('Money Laundering Risk', 'Critical', 'Unusually large, rapid successive micro-donations detected from new accounts linked to the same payment method.', 89, 'Open', '{"pattern": "micro-structuring", "velocity": "high"}'),
+('Suspicious Login', 'Medium', 'Admin login attempt from unusual geographic location (outside India).', 72, 'False Positive', '{"location": "Singapore"}');
+
+-- Transactions Ledger Seed
+INSERT INTO transactions_ledger (transaction_ref, donor_name, orphanage_name, amount_total, amount_orphanage, fee_platform, tip_amount) VALUES
+('TXN-88992-KOL', 'Corporate CSR Trust', 'Hope House', 100000.00, 97500.00, 2500.00, 0.00),
+('TXN-2231A-MUM', 'Priya Sharma', 'Asha Kiran Sadan', 5500.00, 5000.00, 0.00, 500.00),
+('TXN-MM291-BLR', 'Anonymous Donor', 'Green Valley Children''s Home', 15000.00, 14625.00, 375.00, 0.00);
+
+-- Announcements Seed
+INSERT INTO announcements (title, message, target_audience) VALUES
+('System Maintenance Scheduled', 'NextNest portal will be down for 2 hours on Sunday 2 AM IST for scheduled AI engine upgrades.', 'All'),
+('New DPDP Compliance Guidelines', 'All orphanage partners must re-verify their data handling protocols by next Friday to maintain ''Active'' status.', 'Orphanages'),
+('Matching Grant Activated!', 'All donations made giving to Medical Campaigns this week will be matched 1:1 by our CSR partners up to ₹ 5,00,000.', 'Donors');
+

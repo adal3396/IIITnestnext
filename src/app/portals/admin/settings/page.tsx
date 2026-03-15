@@ -20,8 +20,10 @@ export default function SettingsPage() {
     const [settings, setSettings] = useState<Setting[]>([]);
     const [loading, setLoading] = useState(true);
     const [toggling, setToggling] = useState<string | null>(null);
+    const [title, setTitle] = useState("");
     const [announcement, setAnnouncement] = useState("");
     const [audience, setAudience] = useState("All Users");
+    const [sending, setSending] = useState(false);
 
     useEffect(() => {
         fetch("/api/admin/settings")
@@ -42,6 +44,34 @@ export default function SettingsPage() {
             setSettings((prev) => prev.map((x) => x.key === s.key ? updated : x));
         }
         setToggling(null);
+    };
+
+    const handleSendAnnouncement = async () => {
+        if (!title.trim() || !announcement.trim()) return;
+        setSending(true);
+        try {
+            const res = await fetch("/api/admin/announcements", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title,
+                    message: announcement,
+                    target_audience: audience === "All Users" ? "All" : audience.replace("All ", ""),
+                }),
+            });
+            if (res.ok) {
+                setTitle("");
+                setAnnouncement("");
+                alert("Announcement sent successfully!");
+            } else {
+                const err = await res.json();
+                alert(`Error: ${err.error}`);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSending(false);
+        }
     };
 
     return (
@@ -138,6 +168,14 @@ export default function SettingsPage() {
                         </select>
                     </div>
                     <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">Title</label>
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Announcement Subject..."
+                            className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 mb-3"
+                        />
                         <label className="block text-sm font-semibold text-slate-700 mb-1">Message</label>
                         <textarea
                             rows={4}
@@ -148,10 +186,12 @@ export default function SettingsPage() {
                         />
                     </div>
                     <button
-                        disabled={!announcement.trim()}
+                        onClick={handleSendAnnouncement}
+                        disabled={!title.trim() || !announcement.trim() || sending}
                         className="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-slate-900 rounded-xl hover:bg-slate-700 transition-colors disabled:opacity-50"
                     >
-                        <Send className="w-4 h-4" /> Send Announcement
+                        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        Send Announcement
                     </button>
                 </div>
             </div>
