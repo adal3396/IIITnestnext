@@ -6,9 +6,9 @@ import {
     GraduationCap,
     Settings,
     LogOut,
-    AlertTriangle,
     ShieldCheck
 } from "lucide-react";
+import OrphanageHeader from "./OrphanageHeader";
 
 export default function OrphanageDashboardLayout({
     children,
@@ -65,10 +65,7 @@ export default function OrphanageDashboardLayout({
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:justify-end">
                     <div className="md:hidden text-xl font-bold text-purple-600">NextNest Care</div>
                     <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-gray-500">Sunshine Orphanage</span>
-                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold">
-                            SO
-                        </div>
+                        <OrphanageHeader />
                     </div>
                 </header>
 

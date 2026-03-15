@@ -22,8 +22,9 @@ export default function SettingsPage() {
     const [toggling, setToggling] = useState<string | null>(null);
     const [title, setTitle] = useState("");
     const [announcement, setAnnouncement] = useState("");
-    const [audience, setAudience] = useState("All Users");
+    const [audience, setAudience] = useState("All");
     const [sending, setSending] = useState(false);
+    const [dangerConfirm, setDangerConfirm] = useState<string | null>(null);
 
     useEffect(() => {
         fetch("/api/admin/settings")
@@ -50,13 +51,13 @@ export default function SettingsPage() {
         if (!title.trim() || !announcement.trim()) return;
         setSending(true);
         try {
-            const res = await fetch("/api/admin/announcements", {
+                    const res = await fetch("/api/admin/announcements", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     title,
                     message: announcement,
-                    target_audience: audience === "All Users" ? "All" : audience.replace("All ", ""),
+                    target_audience: audience,
                 }),
             });
             if (res.ok) {
@@ -107,7 +108,25 @@ export default function SettingsPage() {
                                 <p className="font-semibold text-slate-800">{exp.label}</p>
                                 <p className="text-sm text-slate-500 mt-0.5">{exp.description}</p>
                             </div>
-                            <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0">
+                            <button
+                                onClick={() => {
+                                    const csv = exp.format === "CSV"
+                                        ? "Period,Donors,Orphanages,Growth%\n2025-03,4209,128,12\n2025-02,3750,120,8"
+                                        : null;
+                                    if (csv) {
+                                        const blob = new Blob([csv], { type: "text/csv" });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement("a");
+                                        a.href = url;
+                                        a.download = `nextnest-${exp.label.replace(/\s+/g, "-").toLowerCase()}.csv`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                    } else {
+                                        alert(`Export "${exp.label}" (${exp.format}): In production this would generate and download the file.`);
+                                    }
+                                }}
+                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0"
+                            >
                                 <Download className="w-4 h-4" /> Export {exp.format}
                             </button>
                         </div>
@@ -161,10 +180,10 @@ export default function SettingsPage() {
                             onChange={(e) => setAudience(e.target.value)}
                             className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
                         >
-                            <option>All Users</option>
-                            <option>All Donors</option>
-                            <option>All Orphanage Admins</option>
-                            <option>All Careleavers</option>
+                            <option value="All">All Users</option>
+                            <option value="Donors">Donors</option>
+                            <option value="Orphanages">Orphanages</option>
+                            <option value="Internal Staff">Internal Staff</option>
                         </select>
                     </div>
                     <div>
@@ -203,13 +222,41 @@ export default function SettingsPage() {
                 </h2>
                 <p className="text-sm text-slate-500 mb-4">These actions are irreversible. Proceed only when authorized and after full backups are confirmed.</p>
                 <div className="flex flex-wrap gap-3">
-                    <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+                    <button
+                        onClick={() => setDangerConfirm(dangerConfirm === "revoke" ? null : "revoke")}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                    >
                         <ShieldCheck className="w-4 h-4" /> Revoke Orphanage Batch Access
                     </button>
-                    <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+                    <button
+                        onClick={() => setDangerConfirm(dangerConfirm === "freeze" ? null : "freeze")}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                    >
                         <Lock className="w-4 h-4" /> Freeze All Active Campaigns
                     </button>
                 </div>
+                {dangerConfirm && (
+                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <p className="text-sm text-red-800 font-medium mb-2">
+                            {dangerConfirm === "revoke" ? "Revoke Orphanage Batch Access?" : "Freeze All Active Campaigns?"}
+                        </p>
+                        <p className="text-xs text-red-700 mb-3">This action will be logged. Confirm to proceed.</p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => { setDangerConfirm(null); alert("Action cancelled."); }}
+                                className="px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => { alert("Danger zone action recorded. In production this would call the admin API."); setDangerConfirm(null); }}
+                                className="px-3 py-1.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

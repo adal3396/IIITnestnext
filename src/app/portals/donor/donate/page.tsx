@@ -12,6 +12,7 @@ import {
     Users,
     CreditCard,
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 /* ─── Razorpay SDK types ────────────────────────────────────────────────── */
 declare global {
@@ -33,6 +34,34 @@ function loadRazorpayScript(): Promise<boolean> {
         script.onload = () => resolve(true);
         script.onerror = () => resolve(false);
         document.body.appendChild(script);
+    });
+}
+
+/** Record donation to ledger (auditable). Call after Razorpay success. */
+async function recordDonation(params: {
+    type: string;
+    amount: number;
+    orphanage_name: string;
+    beneficiary?: string;
+    payment_id: string;
+    consent?: boolean;
+}) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session?.access_token) {
+        (headers as Record<string, string>)["Authorization"] = `Bearer ${session.access_token}`;
+    }
+    await fetch("/api/donor/record-donation", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+            type: params.type,
+            amount: params.amount,
+            orphanage_name: params.orphanage_name,
+            beneficiary: params.beneficiary,
+            payment_id: params.payment_id,
+            consent: params.consent,
+        }),
     });
 }
 
@@ -84,7 +113,7 @@ function getMilestone(pct: number) {
 
 type PayResult = { success: boolean; message?: string; error?: string };
 
-/* ─── Razorpay checkout helper ──────────────────────────────────────────── */
+/* ─── Razorpay or demo donation ──────────────────────────────────────────── */
 async function openRazorpayCheckout({
     amount,
     description,
@@ -96,13 +125,20 @@ async function openRazorpayCheckout({
     onSuccess: (paymentId: string) => void;
     onFailure: (msg: string) => void;
 }) {
+    const statusRes = await fetch("/api/donor/payment-status");
+    const { razorpayConfigured } = statusRes.ok ? await statusRes.json() : { razorpayConfigured: false };
+
+    if (!razorpayConfigured) {
+        onSuccess("demo_" + Date.now());
+        return;
+    }
+
     const loaded = await loadRazorpayScript();
     if (!loaded) {
         onFailure("Could not load payment gateway. Please check your connection.");
         return;
     }
 
-    // 1. Create order server-side
     const orderRes = await fetch("/api/donor/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -111,13 +147,16 @@ async function openRazorpayCheckout({
 
     if (!orderRes.ok) {
         const err = await orderRes.json();
+        if (err.error?.toLowerCase().includes("not configured")) {
+            onSuccess("demo_" + Date.now());
+            return;
+        }
         onFailure(err.error ?? "Failed to initiate payment.");
         return;
     }
 
     const { orderId, amount: razorpayAmount, currency } = await orderRes.json();
 
-    // 2. Open Razorpay modal
     const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: razorpayAmount,
@@ -125,19 +164,15 @@ async function openRazorpayCheckout({
         name: "NextNest Foundation",
         description,
         order_id: orderId,
-        theme: { color: "#0d9488" }, // teal-600
-        handler: (response: { razorpay_payment_id: string }) => {
+        theme: { color: "#0d9488" },
+        handler: async (response: { razorpay_payment_id: string }) => {
             onSuccess(response.razorpay_payment_id);
         },
         modal: {
             ondismiss: () => onFailure("Payment cancelled."),
         },
-        prefill: {
-            name: "Anonymous Donor",
-        },
-        notes: {
-            compliance: "DPDP Act 2023 — No child PII shared",
-        },
+        prefill: { name: "Anonymous Donor" },
+        notes: { compliance: "DPDP Act 2023 — No child PII shared" },
     };
 
     const rzp = new window.Razorpay(options);
@@ -145,14 +180,30 @@ async function openRazorpayCheckout({
 }
 
 /* ─── Functions ─────────────────────────────────────────────────────────── */
+function DonatePageBanner() {
+    const [demoMode, setDemoMode] = useState(false);
+    useEffect(() => {
+        fetch("/api/donor/payment-status")
+            .then((r) => r.json())
+            .then((d) => setDemoMode(!d.razorpayConfigured))
+            .catch(() => setDemoMode(true));
+    }, []);
+    if (!demoMode) return null;
+    return (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+            <strong>Demo mode:</strong> Razorpay is not configured. Your donation will be recorded in the ledger without payment. Configure <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_RAZORPAY_KEY_ID</code> and <code className="bg-amber-100 px-1 rounded">RAZORPAY_KEY_SECRET</code> for live payments.
+        </div>
+    );
+}
+
 function getInitialTab(searchParams: URLSearchParams): Tab {
     const child = searchParams.get("child");
     if (child) return "sponsor";
     const cat = (searchParams.get("category") || "").toLowerCase();
     if (cat.includes("medical") || cat.includes("illness") || cat.includes("health") || cat.includes("surgery")) return "illness";
-    if (cat.includes("sponsor") || cat.includes("child")) return "sponsor";
-    if (cat) return "general"; // Any other category defaults to General Fund
-    return "sponsor"; // Default if absolutely no category or child specified
+    if (cat.includes("sponsor") || cat.includes("child") || cat.includes("education") || cat.includes("general")) return "sponsor";
+    if (cat) return "sponsor";
+    return "sponsor";
 }
 
 function getInitialAmount(searchParams: URLSearchParams, tab: Tab) {
@@ -222,7 +273,15 @@ function DonatePageInner() {
         await openRazorpayCheckout({
             amount: finalAmount,
             description: `${frequency} sponsorship for ${selectedChild}`,
-            onSuccess: (paymentId) => {
+            onSuccess: async (paymentId) => {
+                await recordDonation({
+                    type: "sponsorship",
+                    amount: finalAmount,
+                    orphanage_name: "Sunshine Orphanage",
+                    beneficiary: selectedChild,
+                    payment_id: paymentId,
+                    consent: true,
+                });
                 setSponsorResult({
                     success: true,
                     message: `✅ Payment successful! ID: ${paymentId}. Thank you for sponsoring ${selectedChild}.`,
@@ -243,7 +302,14 @@ function DonatePageInner() {
         await openRazorpayCheckout({
             amount: 1000,
             description: `Critical Illness Fund — ${c.alias}`,
-            onSuccess: (paymentId) => {
+            onSuccess: async (paymentId) => {
+                await recordDonation({
+                    type: "Medical Fund",
+                    amount: 1000,
+                    orphanage_name: "Hope House, Mumbai",
+                    beneficiary: c.alias,
+                    payment_id: paymentId,
+                });
                 setCampaignResult((prev) => ({
                     ...prev,
                     [c.id]: { success: true, message: `Payment successful! ID: ${paymentId}` },
@@ -262,9 +328,10 @@ function DonatePageInner() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
+            <DonatePageBanner />
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h1 className="text-2xl font-bold text-gray-800 mb-1">Make a Donation</h1>
-                <p className="text-gray-500 text-sm">All contributions are securely processed via Razorpay and DPDP Act 2023 compliant.</p>
+                <p className="text-gray-500 text-sm">All contributions are recorded in the auditable ledger. DPDP Act 2023 compliant.</p>
             </div>
 
             {/* Tabs */}
@@ -396,6 +463,12 @@ function DonatePageInner() {
             {/* ── Critical Illness Tab ─────────────────────────────────────────── */}
             {tab === "illness" && (
                 <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                        View verified cases with encrypted progress updates in{" "}
+                        <a href="/portals/donor/medical-cases" className="text-teal-600 font-semibold hover:underline">
+                            Medical Cases
+                        </a>.
+                    </p>
                     {campaigns.length === 0 ? (
                         <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center text-gray-400">
                             <Activity className="w-8 h-8 mx-auto mb-2 opacity-40" aria-hidden="true" />

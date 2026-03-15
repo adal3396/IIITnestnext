@@ -2,6 +2,9 @@
 
 A unified Next.js platform bridging care gaps, connecting donors, orphanages, and administrators.
 
+- **[Problem Statement](PROBLEM_STATEMENT.md)** — Vision, impact, and compliance (DPDP Act 2023, JJ Act 2015).
+- **[Demo Script](DEMO.md)** — Step-by-step demo flow for judges and stakeholders.
+
 ---
 
 ## Team Structure & Working Areas

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Download, CheckCircle, RefreshCw, Filter, History } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, CheckCircle, RefreshCw, Filter, History, Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { supabase } from "@/lib/supabase";
 
 type Category = "Medical" | "Education" | "Supplies" | "Welfare";
 type Status = "Completed" | "Recurring";
@@ -16,16 +17,16 @@ type Contribution = {
     category: Category;
     amount: number;
     status: Status;
+    transaction_ref?: string;
 };
 
-const contributions: Contribution[] = [
-    { id: "TXN-A1", date: "2025-03-10", description: "Medical Fund Contribution", beneficiary: "Sunshine Home, Delhi", category: "Medical", amount: 5000, status: "Completed" },
-    { id: "TXN-A2", date: "2025-03-01", description: "Education Sponsorship", beneficiary: "Anonymous — Child B", category: "Education", amount: 2000, status: "Recurring" },
-    { id: "TXN-A3", date: "2025-02-20", description: "School Supplies Fund", beneficiary: "Hope Haven, Mumbai", category: "Supplies", amount: 1500, status: "Completed" },
-    { id: "TXN-A4", date: "2025-02-10", description: "General Welfare Donation", beneficiary: "Sunrise Shelter, Bengaluru", category: "Welfare", amount: 3000, status: "Completed" },
-    { id: "TXN-A5", date: "2025-01-25", description: "Education Sponsorship", beneficiary: "Anonymous — Child D", category: "Education", amount: 2000, status: "Recurring" },
-    { id: "TXN-A6", date: "2025-01-15", description: "Critical Illness Fund", beneficiary: "Anonymous — Case #A12", category: "Medical", amount: 10000, status: "Completed" },
-];
+const categoryFromOrphanage = (orphanage: string): Category => {
+    const s = orphanage.toLowerCase();
+    if (s.includes("medical") || s.includes("hope") && s.includes("house")) return "Medical";
+    if (s.includes("education") || s.includes("school")) return "Education";
+    if (s.includes("supplies")) return "Supplies";
+    return "Welfare";
+};
 
 const CATEGORIES = ["All", "Medical", "Education", "Supplies", "Welfare"];
 
@@ -124,6 +125,36 @@ function downloadReceipt(c: Contribution) {
 
 export default function HistoryPage() {
     const [filter, setFilter] = useState("All");
+    const [contributions, setContributions] = useState<Contribution[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: HeadersInit = {};
+            if (session?.access_token) {
+                (headers as Record<string, string>)["Authorization"] = `Bearer ${session.access_token}`;
+            }
+            const res = await fetch("/api/donor/transactions", { headers });
+            const data = await res.json();
+            if (Array.isArray(data.transactions) && data.transactions.length > 0) {
+                setContributions(
+                    data.transactions.map((t: { id: string; transaction_ref: string; orphanage_name: string; amount_total: number; status: string; created_at: string }) => ({
+                        id: t.transaction_ref || t.id,
+                        date: t.created_at?.slice(0, 10) ?? "",
+                        description: t.orphanage_name?.includes("General") ? "General Donation" : "Contribution",
+                        beneficiary: t.orphanage_name,
+                        category: categoryFromOrphanage(t.orphanage_name ?? ""),
+                        amount: Number(t.amount_total),
+                        status: t.status === "Completed" ? "Completed" : "Recurring",
+                        transaction_ref: t.transaction_ref,
+                    }))
+                );
+            }
+            setLoading(false);
+        })();
+    }, []);
+
     const filtered = filter === "All" ? contributions : contributions.filter((c) => c.category === filter);
 
     return (
@@ -146,11 +177,16 @@ export default function HistoryPage() {
                 </div>
             </div>
 
-            {filtered.length === 0 ? (
+            {loading ? (
+                <div className="bg-white p-16 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <Loader2 className="w-10 h-10 mx-auto mb-3 text-teal-500 animate-spin" aria-hidden="true" />
+                    <p className="text-gray-500 font-semibold">Loading your auditable contribution history…</p>
+                </div>
+            ) : filtered.length === 0 ? (
                 <div className="bg-white p-16 rounded-2xl shadow-sm border border-gray-100 text-center">
                     <History className="w-10 h-10 mx-auto mb-3 text-gray-200" aria-hidden="true" />
                     <p className="text-gray-400 font-semibold">No contributions yet.</p>
-                    <p className="text-gray-300 text-sm mt-1">Your donation history will appear here once you make a contribution.</p>
+                    <p className="text-gray-300 text-sm mt-1">Sign in and donate to see your full, auditable history here.</p>
                 </div>
             ) : (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -211,7 +247,7 @@ export default function HistoryPage() {
                         </table>
                     </div>
                     <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
-                        Showing {filtered.length} of {contributions.length} contributions · No personally identifiable child data is stored.
+                        Showing {filtered.length} of {contributions.length} contributions · Real-time auditable ledger · No PII stored (DPDP Act 2023).
                     </div>
                 </div>
             )}
