@@ -73,6 +73,50 @@ git commit -m "feat(donor): add AI advisor chat interface"
 # 4. Push your branch and open a Pull Request
 git push origin feat/donor-ai-advisor
 ```
+## System Architecture
+
+```mermaid
+---
+config:
+  layout: dagre
+  theme: default
+  look: classic
+---
+flowchart TB
+    A["Orphanage Uploads<br>Child Data &amp; Documents"] --> B["Data Enters<br>Secure Backend"]
+    B --> C["Data Sanitization<br>Removes Personal Identifiers"]
+    C --> D["Data Encryption Layer<br>Protects Stored Data"]
+    D --> E["AI Engine Processes<br>Anonymized Indicators"]
+    E --> F{"AI Agents"}
+    F --> G["Predictive Risk Agent"] & H["Government Scheme Matcher"] & I["Document OCR Agent"] & J["Philanthropy Advisor"] & K["Transition Success Matcher"]
+    G --> L["AI Outputs<br>Explainable Insights"]
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    L --> M{"Results Distribution"}
+    M --> N["Orphanage Dashboard<br>Child Care Insights"] & O["Donor Dashboard<br>Anonymized Impact Metrics"] & P["Super Admin Portal<br>Bias Auditing &amp; Oversight"]
+    N --> Q["Audit System<br>Logs All Actions"]
+    O --> Q
+    P --> Q
+
+    style A fill:#e1f5ff
+    style B fill:#e1f5ff
+    style C fill:#fff3e0
+    style D fill:#fff3e0
+    style E fill:#f3e5f5
+    style F fill:#f3e5f5
+    style G fill:#f3e5f5
+    style H fill:#f3e5f5
+    style I fill:#f3e5f5
+    style J fill:#f3e5f5
+    style K fill:#f3e5f5
+    style L fill:#e8f5e9
+    style M fill:#e8f5e9
+    style N fill:#fce4ec
+    style O fill:#fce4ec
+    style P fill:#fce4ec
+    style Q fill:#eeeeee
 
 ---
 
