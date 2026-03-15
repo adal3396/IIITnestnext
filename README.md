@@ -97,8 +97,8 @@ flowchart TB
     J --> L
     K --> L
     L --> M{"Results Distribution"}
-    M --> N["Orphanage Dashboard<br>Child Care Insights"] & O["Donor Dashboard<br>Anonymized Impact Metrics"] & P["Super Admin Portal<br>Bias Auditing &amp; Oversight"]
-    N --> Q["Audit System<br>Logs All Actions"]
+    M --> N["Orphanage Dashboard Child Care Insights"] & O["Donor Dashboard Anonymized Impact Metrics"] & P["Super Admin Portal Bias Auditing &amp; Oversight"]
+    N --> Q["Audit System Logs All Actions"]
     O --> Q
     P --> Q
 
