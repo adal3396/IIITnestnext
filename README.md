@@ -73,10 +73,12 @@ git commit -m "feat(donor): add AI advisor chat interface"
 # 4. Push your branch and open a Pull Request
 git push origin feat/donor-ai-advisor
 ```
+
+---
 ## System Architecture
 
 ```mermaid
----
+flowchart TD
 config:
   layout: dagre
   theme: default
