@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
     HeartHandshake,
     AlertCircle,
@@ -36,7 +37,7 @@ function loadRazorpayScript(): Promise<boolean> {
 }
 
 /* ─── Data ──────────────────────────────────────────────────────────────── */
-type Tab = "sponsor" | "illness";
+type Tab = "sponsor" | "illness" | "general";
 
 type Campaign = {
     id: string;
@@ -143,20 +144,67 @@ async function openRazorpayCheckout({
     rzp.open();
 }
 
+/* ─── Functions ─────────────────────────────────────────────────────────── */
+function getInitialTab(searchParams: URLSearchParams): Tab {
+    const child = searchParams.get("child");
+    if (child) return "sponsor";
+    const cat = (searchParams.get("category") || "").toLowerCase();
+    if (cat.includes("medical") || cat.includes("illness") || cat.includes("health") || cat.includes("surgery")) return "illness";
+    if (cat.includes("sponsor") || cat.includes("child")) return "sponsor";
+    if (cat) return "general"; // Any other category defaults to General Fund
+    return "sponsor"; // Default if absolutely no category or child specified
+}
+
+function getInitialAmount(searchParams: URLSearchParams, tab: Tab) {
+    const raw = searchParams.get("amount");
+    if (!raw) return 1000;
+    const parsed = parseInt(raw.replace(/,/g, ""));
+    return isNaN(parsed) ? 1000 : parsed;
+}
+
 /* ─── Page ──────────────────────────────────────────────────────────────── */
 export default function DonatePage() {
-    const [tab, setTab] = useState<Tab>("sponsor");
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-gray-400">Loading…</div>}>
+            <DonatePageInner />
+        </Suspense>
+    );
+}
 
-    // Sponsor tab state
-    const [selectedChild, setSelectedChild] = useState(childAliases[0]);
-    const [amount, setAmount] = useState(1000);
-    const [customAmount, setCustomAmount] = useState("");
+function DonatePageInner() {
+    const searchParams = useSearchParams();
+    const initialTab = getInitialTab(searchParams);
+    const [tab, setTab] = useState<Tab>(initialTab);
+
+    const childParam = searchParams.get("child");
+    const categoryParam = searchParams.get("category") || "";
+    const matchedChild = childAliases.find(
+        (alias) => alias.toLowerCase() === (childParam || "").toLowerCase()
+    ) || childAliases[0];
+
+    // Sponsor state
+    const [selectedChild, setSelectedChild] = useState(matchedChild);
+    const initialAmountValue = getInitialAmount(searchParams, initialTab);
+    const [amount, setAmount] = useState(AMOUNTS.includes(initialAmountValue) && initialTab !== "general" ? initialAmountValue : 1000);
+    const [customAmount, setCustomAmount] = useState(
+        !AMOUNTS.includes(initialAmountValue) && initialTab !== "general" ? initialAmountValue.toString() : ""
+    );
     const [frequency, setFrequency] = useState(FREQUENCIES[0]);
     const [consent, setConsent] = useState(false);
     const [sponsorLoading, setSponsorLoading] = useState(false);
     const [sponsorResult, setSponsorResult] = useState<PayResult | null>(null);
 
-    // Campaign donate state
+    // General Fund State  
+    const [generalCategory, setGeneralCategory] = useState(categoryParam || "General Education");
+    const [generalAmount, setGeneralAmount] = useState(AMOUNTS.includes(initialAmountValue) && initialTab === "general" ? initialAmountValue : 1000);
+    const [generalCustomAmount, setGeneralCustomAmount] = useState(
+        !AMOUNTS.includes(initialAmountValue) && initialTab === "general" ? initialAmountValue.toString() : ""
+    );
+    const [generalFrequency, setGeneralFrequency] = useState(FREQUENCIES[0]);
+    const [generalLoading, setGeneralLoading] = useState(false);
+    const [generalResult, setGeneralResult] = useState<PayResult | null>(null);
+
+    // Campaign state
     const [campaignLoading, setCampaignLoading] = useState<string | null>(null);
     const [campaignResult, setCampaignResult] = useState<Record<string, PayResult>>({});
 
@@ -164,6 +212,7 @@ export default function DonatePage() {
     useEffect(() => { loadRazorpayScript(); }, []);
 
     const finalAmount = customAmount ? parseInt(customAmount) : amount;
+    const finalGeneralAmount = generalCustomAmount ? parseInt(generalCustomAmount) : generalAmount;
 
     async function handleSponsor() {
         if (!consent || sponsorLoading || !finalAmount || finalAmount <= 0) return;
