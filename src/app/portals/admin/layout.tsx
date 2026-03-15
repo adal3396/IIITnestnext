@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import {
     LayoutDashboard,
     Building2,
@@ -7,14 +9,24 @@ import {
     Settings,
     LogOut,
     Shield,
-    Database
+    Database,
+    ShieldAlert,
+    TrendingUp,
+    HandCoins
 } from "lucide-react";
 
-export default function SuperAdminDashboardLayout({
+export default async function SuperAdminDashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get("admin_session");
+
+    if (!adminSession || adminSession.value !== "authenticated") {
+        redirect("/portals/public/login?role=admin");
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 flex">
             {/* Sidebar Navigation */}
@@ -27,30 +39,42 @@ export default function SuperAdminDashboardLayout({
                 </div>
 
                 <nav className="flex-1 px-4 py-6 space-y-2">
-                    <Link href="/admin" className="flex items-center gap-3 px-3 py-2 text-white bg-slate-800 rounded-lg font-medium">
+                    <Link href="/portals/admin" className="flex items-center gap-3 px-3 py-2 text-white bg-slate-800 rounded-lg font-medium">
                         <LayoutDashboard className="w-5 h-5 text-amber-500" />
                         Global Overview
                     </Link>
-                    <Link href="/admin/orphanages" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/admin/orphanages" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
                         <Building2 className="w-5 h-5" />
                         Orphanages
                     </Link>
-                    <Link href="/admin/donors" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/admin/donors" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
                         <HeartHandshake className="w-5 h-5" />
                         Donors & Funds
                     </Link>
-                    <Link href="/admin/ai-audit" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/admin/ai-audit" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
                         <Activity className="w-5 h-5" />
                         AI Bias Audit
                     </Link>
-                    <Link href="/admin/database" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/admin/security" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                        <ShieldAlert className="w-5 h-5 text-red-500" />
+                        Fraud & Security
+                    </Link>
+                    <Link href="/portals/admin/analytics" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                        <TrendingUp className="w-5 h-5 text-indigo-500" />
+                        Platform Analytics
+                    </Link>
+                    <Link href="/portals/admin/finance" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                        <HandCoins className="w-5 h-5 text-emerald-500" />
+                        Financial Ledger
+                    </Link>
+                    <Link href="/portals/admin/database" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
                         <Database className="w-5 h-5" />
                         Data Export
                     </Link>
                 </nav>
 
                 <div className="p-4 border-t border-slate-800 space-y-2">
-                    <Link href="/admin/settings" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/admin/settings" className="flex items-center gap-3 px-3 py-2 hover:text-white hover:bg-slate-800 rounded-lg font-medium transition-colors">
                         <Settings className="w-5 h-5" />
                         Platform Settings
                     </Link>

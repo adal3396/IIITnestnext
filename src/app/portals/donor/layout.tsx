@@ -26,26 +26,26 @@ export default function DonorDashboardLayout({
                 </div>
 
                 <nav className="flex-1 px-4 py-6 space-y-2">
-                    <Link href="/donor" className="flex items-center gap-3 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg font-medium">
+                    <Link href="/portals/donor" className="flex items-center gap-3 px-3 py-2 text-teal-700 bg-teal-50 rounded-lg font-medium">
                         <LayoutDashboard className="w-5 h-5" />
                         Impact Dashboard
                     </Link>
-                    <Link href="/donor/donate" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/donor/donate" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <HandHeart className="w-5 h-5" />
                         Make a Donation
                     </Link>
-                    <Link href="/donor/advisor" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/donor/advisor" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <MessageSquareHeart className="w-5 h-5" />
                         AI Advisor
                     </Link>
-                    <Link href="/donor/history" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/donor/history" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <History className="w-5 h-5" />
                         Contribution History
                     </Link>
                 </nav>
 
                 <div className="p-4 border-t border-gray-200 space-y-2">
-                    <Link href="/donor/settings" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                    <Link href="/portals/donor/settings" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <Settings className="w-5 h-5" />
                         Settings
                     </Link>

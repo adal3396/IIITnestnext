@@ -1,31 +1,30 @@
-import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function GET() {
-    const { data, error } = await supabase
-        .from("transactions_ledger")
-        .select("*")
-        .order("created_at", { ascending: false });
+    try {
+        const { data: transactions, error } = await supabase
+            .from('transactions_ledger')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error) throw error;
+        
+        // Calculate aggregations
+        const totalVolume = transactions.reduce((acc, txn) => acc + Number(txn.amount_total), 0);
+        const totalFees = transactions.reduce((acc, txn) => acc + Number(txn.fee_platform), 0);
+        const totalTips = transactions.reduce((acc, txn) => acc + Number(txn.tip_amount), 0);
 
-    const completedTxns = data?.filter((t) => t.status === "Completed") ?? [];
-    const totalGross = completedTxns.reduce((sum, t) => sum + t.gross_amount, 0);
-    const totalFees = completedTxns.reduce((sum, t) => sum + t.maintenance_fee, 0);
-    const totalTips = completedTxns.reduce((sum, t) => sum + t.donor_tip, 0);
-    const totalNet = completedTxns.reduce((sum, t) => sum + t.net_amount, 0);
-    const pendingCount = data?.filter((t) => t.status === "Pending").length ?? 0;
-
-    return NextResponse.json({
-        transactions: data,
-        summary: {
-            totalGross,
-            totalFees,
-            totalTips,
-            totalNet,
-            platformRevenue: totalFees + totalTips,
-            transactionCount: completedTxns.length,
-            pendingCount,
-        },
-    });
+        return NextResponse.json({
+            transactions,
+            summary: {
+                total_volume: totalVolume,
+                platform_fees: totalFees,
+                donor_tips: totalTips,
+                net_revenue: totalFees + totalTips
+            }
+        });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 }

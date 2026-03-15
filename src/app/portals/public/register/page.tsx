@@ -3,13 +3,14 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Heart, Building2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const ROLES = [
     {
         value: "donor",
         label: "Donor / CSR Partner",
         icon: <Heart className="w-8 h-8" />,
-        href: "/donor",
+        href: "/portals/donor",
         color: "border-orange-400 bg-orange-50 text-orange-800",
         desc: "Donate, track impact, sponsor children",
     },
@@ -17,7 +18,7 @@ const ROLES = [
         value: "orphanage",
         label: "Orphanage / NGO",
         icon: <Building2 className="w-8 h-8" />,
-        href: "/orphanage",
+        href: "/portals/orphanage",
         color: "border-blue-400 bg-blue-50 text-blue-900",
         desc: "Manage children, documents & AI insights",
     },
@@ -30,14 +31,40 @@ export default function RegisterPage() {
     const [form, setForm] = useState({ name: "", email: "", password: "", orgName: "", consent: false });
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const [error, setError] = useState<string | null>(null);
 
     const selectedRole = ROLES.find((r) => r.value === role) ?? ROLES[0];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        await new Promise((res) => setTimeout(res, 900));
-        router.push(selectedRole.href);
+        setError(null);
+        
+        try {
+            const { data, error: signUpError } = await supabase.auth.signUp({
+                email: form.email,
+                password: form.password,
+                options: {
+                    data: {
+                        full_name: form.name,
+                        role: role,
+                        organization_name: form.orgName, // Will be empty for donors
+                        consent_given: form.consent
+                    }
+                }
+            });
+
+            if (signUpError) {
+                throw signUpError;
+            }
+
+            // Immediately redirect to the correct portal after successful signup
+            router.push(selectedRole.href);
+        } catch (err: any) {
+            setError(err.message || "An error occurred during registration. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -56,11 +83,10 @@ export default function RegisterPage() {
                                 key={r.value}
                                 type="button"
                                 onClick={() => setRole(r.value)}
-                                className={`flex flex-col items-center gap-2 p-4 rounded-md border-2 text-sm font-semibold transition-all ${
-                                    role === r.value
+                                className={`flex flex-col items-center gap-2 p-4 rounded-md border-2 text-sm font-semibold transition-all ${role === r.value
                                         ? r.color + " ring-1 ring-offset-1 ring-blue-900"
                                         : "border-gray-200 text-gray-500 hover:border-gray-400 bg-white"
-                                }`}
+                                    }`}
                             >
                                 <span className="mb-1">{r.icon}</span>
                                 <span>{r.label}</span>
@@ -68,6 +94,12 @@ export default function RegisterPage() {
                             </button>
                         ))}
                     </div>
+
+                    {error && (
+                        <div className="mb-4 p-3 rounded-md bg-red-50 text-red-600 text-sm border border-red-200">
+                            {error}
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>

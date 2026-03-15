@@ -1,190 +1,175 @@
 "use client";
-import { useEffect, useState } from "react";
-import { ShieldAlert, AlertTriangle, CheckCircle, Search, Loader2, XCircle, Eye } from "lucide-react";
 
-interface FraudAlert {
+import { useEffect, useState } from "react";
+import { ShieldAlert, CheckCircle2, AlertTriangle, AlertOctagon, Info } from "lucide-react";
+
+type FraudAlert = {
     id: string;
     type: string;
+    severity: "Low" | "Medium" | "High" | "Critical";
     description: string;
-    severity: string;
-    entity_type: string;
-    entity_ref: string;
-    ip_address: string;
-    status: string;
     ai_confidence: number;
-    admin_note: string;
+    metadata: Record<string, any>;
+    status: "Open" | "Investigating" | "Resolved" | "False Positive";
     created_at: string;
-}
-
-interface Stats {
-    total: number;
-    open: number;
-    critical: number;
-    investigating: number;
-}
-
-const severityStyle: Record<string, string> = {
-    Critical: "bg-red-100 text-red-700 border-red-200",
-    High: "bg-orange-100 text-orange-700 border-orange-200",
-    Medium: "bg-amber-100 text-amber-700 border-amber-200",
-    Low: "bg-slate-100 text-slate-600 border-slate-200",
 };
 
-const statusStyle: Record<string, string> = {
-    Open: "bg-red-50 text-red-600 border-red-200",
-    Investigating: "bg-amber-50 text-amber-600 border-amber-200",
-    Resolved: "bg-emerald-50 text-emerald-600 border-emerald-200",
-    "False Positive": "bg-slate-100 text-slate-500 border-slate-200",
-};
-
-function timeAgo(d: string) {
-    const diff = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-}
-
-export default function SecurityPage() {
+export default function SecurityDashboard() {
     const [alerts, setAlerts] = useState<FraudAlert[]>([]);
-    const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState("");
-    const [updating, setUpdating] = useState<string | null>(null);
-    const [selected, setSelected] = useState<FraudAlert | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    const fetchAlerts = () => {
-        setLoading(true);
-        fetch("/api/admin/security")
-            .then((r) => r.json())
-            .then((d) => { setAlerts(d.alerts ?? []); setStats(d.stats); setLoading(false); })
-            .catch(() => setLoading(false));
+    useEffect(() => {
+        fetchAlerts();
+    }, []);
+
+    const fetchAlerts = async () => {
+        try {
+            const res = await fetch("/api/admin/security");
+            if (!res.ok) throw new Error("Failed to fetch alerts");
+            const data = await res.json();
+            setAlerts(data);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    useEffect(() => { fetchAlerts(); }, []);
-
-    const updateStatus = async (id: string, status: string, note?: string) => {
-        setUpdating(id);
-        await fetch("/api/admin/security", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, status, admin_note: note }),
-        });
-        setAlerts((prev) => prev.map((a) => a.id === id ? { ...a, status, admin_note: note ?? a.admin_note } : a));
-        setSelected(null);
-        setUpdating(null);
+    const updateStatus = async (id: string, status: FraudAlert['status']) => {
+        try {
+            setAlerts(alerts.map(a => a.id === id ? { ...a, status } : a));
+            
+            const res = await fetch("/api/admin/security", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, status })
+            });
+            
+            if (!res.ok) {
+                throw new Error("Failed to update status");
+            }
+        } catch (err: any) {
+            alert(err.message);
+            fetchAlerts(); // Revert on failure
+        }
     };
 
-    const filtered = alerts.filter((a) =>
-        !search || a.description.toLowerCase().includes(search.toLowerCase()) ||
-        a.type.toLowerCase().includes(search.toLowerCase()) || (a.entity_ref ?? "").toLowerCase().includes(search.toLowerCase())
-    );
+    const getSeverityColor = (severity: string) => {
+        switch (severity) {
+            case "Critical": return "bg-red-100 text-red-800 border-red-200";
+            case "High": return "bg-orange-100 text-orange-800 border-orange-200";
+            case "Medium": return "bg-amber-100 text-amber-800 border-amber-200";
+            case "Low": return "bg-blue-100 text-blue-800 border-blue-200";
+            default: return "bg-gray-100 text-gray-800 border-gray-200";
+        }
+    };
 
-    const statCards = [
-        { label: "Total Alerts", value: stats?.total ?? 0, color: "bg-slate-50 text-slate-700", icon: <ShieldAlert className="w-5 h-5" /> },
-        { label: "Open Alerts", value: stats?.open ?? 0, color: "bg-red-50 text-red-600", icon: <AlertTriangle className="w-5 h-5" /> },
-        { label: "Critical Severity", value: stats?.critical ?? 0, color: "bg-orange-50 text-orange-600", icon: <XCircle className="w-5 h-5" /> },
-        { label: "Investigating", value: stats?.investigating ?? 0, color: "bg-amber-50 text-amber-600", icon: <Eye className="w-5 h-5" /> },
-    ];
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case "Open": return "bg-red-50 text-red-700 ring-red-600/20";
+            case "Investigating": return "bg-amber-50 text-amber-700 ring-amber-600/20";
+            case "Resolved": return "bg-green-50 text-green-700 ring-green-600/20";
+            case "False Positive": return "bg-gray-50 text-gray-700 ring-gray-600/20";
+            default: return "bg-gray-50 text-gray-700 ring-gray-600/20";
+        }
+    };
+
+    if (loading) return <div className="p-8 pb-0 animate-pulse bg-gray-50 min-h-screen">Loading security feeds...</div>;
+    if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-xl border border-red-200 m-8">Error: {error}</div>;
+
+    const openCount = alerts.filter(a => a.status === 'Open').length;
+    const criticalCount = alerts.filter(a => a.severity === 'Critical' && a.status === 'Open').length;
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <ShieldAlert className="w-6 h-6 text-red-500" /> Fraud &amp; Anomaly Detection
+                    <h1 className="text-2xl text-slate-900 font-bold flex items-center gap-2">
+                        <ShieldAlert className="w-7 h-7 text-red-600" />
+                        Security & Fraud Detection
                     </h1>
-                    <p className="text-slate-500 mt-1">AI-flagged suspicious activities, financial anomalies, and fake profiles.</p>
+                    <p className="text-slate-500 mt-1">AI-driven anomaly detection and platform integrity monitoring.</p>
                 </div>
-                <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text" placeholder="Search alerts…" value={search} onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-red-200"
-                    />
+                <div className="flex gap-4">
+                    <div className="flex flex-col items-end bg-red-50 px-4 py-2 rounded-xl border border-red-100">
+                        <span className="text-2xl font-black text-red-700 leading-none">{criticalCount}</span>
+                        <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">Critical</span>
+                    </div>
+                    <div className="flex flex-col items-end bg-orange-50 px-4 py-2 rounded-xl border border-orange-100">
+                        <span className="text-2xl font-black text-orange-700 leading-none">{openCount}</span>
+                        <span className="text-xs font-semibold text-orange-600 uppercase tracking-wider">Open Alerts</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {statCards.map((s) => (
-                    <div key={s.label} className={`p-5 rounded-2xl border border-slate-200 bg-white shadow-sm`}>
-                        <div className={`inline-flex p-2 rounded-lg mb-3 ${s.color}`}>{s.icon}</div>
-                        <p className="text-2xl font-bold text-slate-900">{loading ? <Loader2 className="w-5 h-5 animate-spin text-slate-300" /> : s.value}</p>
-                        <p className="text-sm text-slate-500 mt-0.5">{s.label}</p>
-                    </div>
-                ))}
-            </div>
-
-            {/* Alert List */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-slate-100">
-                    <h2 className="font-bold text-slate-900">All Fraud Alerts</h2>
-                </div>
-                {loading ? (
-                    <div className="flex items-center justify-center py-16">
-                        <Loader2 className="w-8 h-8 animate-spin text-red-400" />
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center py-16 text-slate-400">
-                        <CheckCircle className="w-10 h-10 mb-2 text-emerald-400" />
-                        <p>No fraud alerts found.</p>
+            <div className="grid grid-cols-1 gap-4">
+                {alerts.length === 0 ? (
+                    <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-slate-500">
+                        <CheckCircle2 className="w-12 h-12 text-green-500 mb-3" />
+                        <h3 className="text-lg font-bold text-slate-900">System Secure</h3>
+                        <p>No active fraud alerts detected by the AI Engine.</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-slate-50">
-                        {filtered.map((alert) => (
-                            <div key={alert.id} className="p-5 hover:bg-slate-50 transition-colors">
-                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                                    <div className="flex-1">
-                                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${severityStyle[alert.severity] ?? ""}`}>{alert.severity}</span>
-                                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusStyle[alert.status] ?? ""}`}>{alert.status}</span>
-                                            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{alert.type}</span>
+                    alerts.map((alert) => (
+                        <div key={alert.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="p-5 flex items-start gap-4">
+                                <div className={`p-3 rounded-xl flex-shrink-0 ${alert.severity === 'Critical' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                                    {alert.severity === 'Critical' ? <AlertOctagon className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <h3 className="text-lg font-bold text-slate-900">{alert.type}</h3>
+                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColor(alert.status)}`}>
+                                            {alert.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-md border ${getSeverityColor(alert.severity)}`}>
+                                            {alert.severity} Severity
+                                        </span>
+                                        <span className="text-sm font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100">
+                                            AI Confidence: {alert.ai_confidence}%
+                                        </span>
+                                        <span className="text-xs text-slate-400">
+                                            {new Date(alert.created_at).toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <p className="text-slate-600 text-sm mb-4 leading-relaxed">{alert.description}</p>
+                                    
+                                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 font-mono text-xs text-slate-600 mb-4">
+                                        <div className="flex items-center gap-1.5 mb-1.5 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                                            <Info className="w-3 h-3" /> Metadata Snapshot
                                         </div>
-                                        <p className="text-sm font-medium text-slate-800">{alert.description}</p>
-                                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-400">
-                                            {alert.entity_ref && <span>Entity: <span className="text-slate-600 font-medium">{alert.entity_ref}</span></span>}
-                                            {alert.ip_address && <span>IP: <span className="font-mono text-slate-600">{alert.ip_address}</span></span>}
-                                            <span>AI Confidence: <span className="text-slate-600 font-medium">{alert.ai_confidence}%</span></span>
-                                            <span>{timeAgo(alert.created_at)}</span>
-                                        </div>
-                                        {alert.admin_note && (
-                                            <p className="mt-2 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded px-3 py-2">Note: {alert.admin_note}</p>
+                                        {JSON.stringify(alert.metadata)}
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2 border-t border-slate-100">
+                                        {alert.status !== 'Open' && (
+                                            <button onClick={() => updateStatus(alert.id, 'Open')} className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-300 rounded hover:bg-slate-50 transition-colors">
+                                                Re-open
+                                            </button>
+                                        )}
+                                        {alert.status !== 'Investigating' && (
+                                            <button onClick={() => updateStatus(alert.id, 'Investigating')} className="px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 transition-colors">
+                                                Mark Investigating
+                                            </button>
+                                        )}
+                                        {alert.status !== 'Resolved' && (
+                                            <button onClick={() => updateStatus(alert.id, 'Resolved')} className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded hover:bg-emerald-100 transition-colors">
+                                                Resolve
+                                            </button>
+                                        )}
+                                        {alert.status !== 'False Positive' && (
+                                            <button onClick={() => updateStatus(alert.id, 'False Positive')} className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded hover:bg-slate-200 transition-colors">
+                                                Flag as False Positive
+                                            </button>
                                         )}
                                     </div>
-                                    {alert.status === "Open" || alert.status === "Investigating" ? (
-                                        <div className="flex gap-2 flex-wrap shrink-0">
-                                            {alert.status === "Open" && (
-                                                <button
-                                                    onClick={() => updateStatus(alert.id, "Investigating")}
-                                                    disabled={updating === alert.id}
-                                                    className="text-xs px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg font-semibold hover:bg-amber-200 transition-colors disabled:opacity-50"
-                                                >
-                                                    {updating === alert.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Investigate"}
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => updateStatus(alert.id, "Resolved", "Reviewed and confirmed as fraudulent. Action taken.")}
-                                                disabled={updating === alert.id}
-                                                className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-lg font-semibold hover:bg-red-200 transition-colors disabled:opacity-50"
-                                            >
-                                                Confirm & Resolve
-                                            </button>
-                                            <button
-                                                onClick={() => updateStatus(alert.id, "False Positive", "Reviewed and marked as false positive after manual verification.")}
-                                                disabled={updating === alert.id}
-                                                className="text-xs px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg font-semibold hover:bg-slate-200 transition-colors disabled:opacity-50"
-                                            >
-                                                False Positive
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs text-slate-400 shrink-0 self-start mt-1">Closed</span>
-                                    )}
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ))
                 )}
             </div>
         </div>
