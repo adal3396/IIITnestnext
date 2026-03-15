@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import AdminNotificationBadge from "./AdminNotificationBadge";
 import {
     LayoutDashboard,
     Building2,
@@ -92,7 +93,8 @@ export default async function SuperAdminDashboardLayout({
                         <Shield className="w-5 h-5" />
                         Admin
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <AdminNotificationBadge />
                         <span className="text-sm font-medium text-gray-500">Super Admin</span>
                         <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white font-bold border-2 border-amber-500">
                             SA
