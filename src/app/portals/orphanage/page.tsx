@@ -19,20 +19,47 @@ export default function OrphanageDashboard() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
+    const [lastRegistered, setLastRegistered] = useState<{ name: string; dob: string; gender: string; admissionDate: string } | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+        const name = (formData.get("fullName") as string) || "";
+        const dob = (formData.get("dob") as string) || "";
+        const gender = (formData.get("gender") as string) || "";
+        const admissionDate = (formData.get("admissionDate") as string) || "";
+
         setIsSubmitting(true);
-        
-        // Simulate Supabase 'insert'
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        setLastRegistered({ name, dob, gender, admissionDate });
         setIsSubmitting(false);
         setIsModalOpen(false);
         setShowToast(true);
-        
-        // Reset toast after 3 seconds
         setTimeout(() => setShowToast(false), 3000);
+    };
+
+    const handlePrintRegistration = () => {
+        if (!lastRegistered) return;
+        const w = window.open("", "_blank");
+        if (!w) return;
+        w.document.write(`
+            <!DOCTYPE html><html><head><title>Child Registration Summary</title></head><body class="p-8">
+            <h1 style="font-size:1.5rem;font-weight:bold;margin-bottom:1rem;">NextNest — Child Registration Summary</h1>
+            <p style="font-size:0.875rem;color:#666;margin-bottom:0.5rem;">Generated on ${new Date().toLocaleString("en-IN")}</p>
+            <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+            <tr><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;font-weight:600;">Full Name</td><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;">${lastRegistered.name}</td></tr>
+            <tr><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;font-weight:600;">Date of Birth</td><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;">${lastRegistered.dob}</td></tr>
+            <tr><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;font-weight:600;">Gender</td><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;">${lastRegistered.gender}</td></tr>
+            <tr><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;font-weight:600;">Admission Date</td><td style="border:1px solid #ddd;padding:0.5rem 0.75rem;">${lastRegistered.admissionDate}</td></tr>
+            </table>
+            <p style="font-size:0.75rem;color:#888;margin-top:1rem;">DPDP Act 2023 compliant. For internal use only.</p>
+            </body></html>
+        `);
+        w.document.close();
+        w.focus();
+        setTimeout(() => { w.print(); w.close(); }, 250);
     };
 
     return (
@@ -43,9 +70,21 @@ export default function OrphanageDashboard() {
                     <div className="bg-green-500 text-white p-1 rounded-full">
                         <Users className="w-4 h-4" />
                     </div>
-                    <p className="font-medium">Child registered successfully!</p>
+                    <div className="flex items-center gap-3">
+                        <p className="font-medium">Child registered successfully!</p>
+                        {lastRegistered && (
+                            <button
+                                type="button"
+                                onClick={handlePrintRegistration}
+                                className="text-sm font-semibold text-green-700 underline hover:no-underline"
+                            >
+                                Print summary
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
+
 
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div>
@@ -141,6 +180,7 @@ export default function OrphanageDashboard() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                                 <input 
                                     required
+                                    name="fullName"
                                     type="text" 
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-hidden"
                                     placeholder="e.g. Rahul Sharma"
@@ -152,6 +192,7 @@ export default function OrphanageDashboard() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
                                     <input 
                                         required
+                                        name="dob"
                                         type="date" 
                                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-hidden"
                                     />
@@ -160,6 +201,7 @@ export default function OrphanageDashboard() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                                     <select 
                                         required
+                                        name="gender"
                                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-hidden"
                                     >
                                         <option value="">Select</option>
@@ -174,6 +216,7 @@ export default function OrphanageDashboard() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Admission Date</label>
                                 <input 
                                     required
+                                    name="admissionDate"
                                     type="date" 
                                     className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-hidden"
                                     defaultValue={new Date().toISOString().split('T')[0]}

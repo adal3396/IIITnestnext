@@ -1,7 +1,12 @@
-import { ArrowLeft, CheckCircle, Info } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ArrowLeft, CheckCircle, Info, X } from "lucide-react";
 import Link from "next/link";
 
 export default function SchemeMatcher() {
+    const [criteriaModal, setCriteriaModal] = useState<{ name: string; criteria: string[] } | null>(null);
+
     const schemes = [
         {
             id: 1,
@@ -73,7 +78,11 @@ export default function SchemeMatcher() {
                                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Confidence Score</p>
                                 <div className="text-4xl font-black text-purple-600">{scheme.confidence}</div>
                             </div>
-                            <button className="w-full bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setCriteriaModal({ name: scheme.name, criteria: scheme.criteria })}
+                                className="w-full bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2"
+                            >
                                 <Info className="w-4 h-4" />
                                 View Criteria
                             </button>
@@ -81,6 +90,40 @@ export default function SchemeMatcher() {
                     </div>
                 ))}
             </div>
+
+            {/* View Criteria modal */}
+            {criteriaModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-gray-800">Eligibility Criteria</h3>
+                            <button
+                                type="button"
+                                onClick={() => setCriteriaModal(null)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <p className="text-sm font-semibold text-purple-600 mb-3">{criteriaModal.name}</p>
+                        <ul className="space-y-2">
+                            {criteriaModal.criteria.map((c, i) => (
+                                <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                    {c}
+                                </li>
+                            ))}
+                        </ul>
+                        <button
+                            type="button"
+                            onClick={() => setCriteriaModal(null)}
+                            className="mt-4 w-full py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
