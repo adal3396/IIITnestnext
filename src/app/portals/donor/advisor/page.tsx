@@ -195,6 +195,26 @@ export default function AIAdvisorPage() {
                     <div ref={bottomRef} />
                 </div>
 
+                {/* NLP Quick Prompts */}
+                <div className="px-4 pb-2 border-t border-gray-50 pt-3 flex flex-wrap gap-2">
+                    {[
+                        "I want to help sick children 🏥",
+                        "I can donate ₹1,000 — suggest best use",
+                        "I want to sponsor a child's education 📚",
+                        "Where is urgent medical funding needed?",
+                        "Help me donate for nutritious meals 🍱",
+                    ].map((prompt) => (
+                        <button
+                            key={prompt}
+                            onClick={() => { setInput(prompt); }}
+                            disabled={loading}
+                            className="text-xs px-3 py-1.5 bg-teal-50 text-teal-700 border border-teal-200 rounded-full hover:bg-teal-100 transition-colors disabled:opacity-50 font-medium"
+                        >
+                            {prompt}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Input */}
                 <div className="p-4 border-t border-gray-100">
                     <div className="flex items-end gap-2">
