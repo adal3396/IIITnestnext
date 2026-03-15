@@ -1,33 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function GET() {
-    const { data, error } = await supabase
-        .from("fraud_alerts")
-        .select("*")
-        .order("created_at", { ascending: false });
+    try {
+        const { data: alerts, error } = await supabase
+            .from('fraud_alerts')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-    const total = data?.length ?? 0;
-    const open = data?.filter((d) => d.status === "Open").length ?? 0;
-    const critical = data?.filter((d) => d.severity === "Critical").length ?? 0;
-    const investigating = data?.filter((d) => d.status === "Investigating").length ?? 0;
-
-    return NextResponse.json({ alerts: data, stats: { total, open, critical, investigating } });
+        if (error) throw error;
+        
+        return NextResponse.json(alerts);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 }
 
-export async function PATCH(req: NextRequest) {
-    const { id, status, admin_note } = await req.json();
-    if (!id || !status) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+export async function PATCH(request: Request) {
+    try {
+        const { id, status } = await request.json();
+        
+        if (!id || !status) {
+            return NextResponse.json({ error: 'Missing id or status' }, { status: 400 });
+        }
 
-    const { data, error } = await supabase
-        .from("fraud_alerts")
-        .update({ status, admin_note, updated_at: new Date().toISOString() })
-        .eq("id", id)
-        .select()
-        .single();
+        const { data, error } = await supabase
+            .from('fraud_alerts')
+            .update({ status })
+            .eq('id', id)
+            .select()
+            .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+        if (error) throw error;
+        
+        return NextResponse.json(data);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 }

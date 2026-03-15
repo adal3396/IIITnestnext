@@ -7,12 +7,7 @@ import {
     Settings,
     LogOut,
     AlertTriangle,
-    ShieldCheck,
-    PackageSearch,
-    FileText as FileTextIcon,
-    Users as UsersIcon,
-    Sparkles,
-    UserPlus
+    ShieldCheck
 } from "lucide-react";
 
 export default function OrphanageDashboardLayout({
@@ -46,21 +41,6 @@ export default function OrphanageDashboardLayout({
                     <Link href="/portals/orphanage/transition" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
                         <GraduationCap className="w-5 h-5" />
                         Transition Planning
-                    </Link>
-                    <div className="pt-4 pb-2">
-                        <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Extra Features</p>
-                    </div>
-                    <Link href="/portals/orphanage/inventory" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
-                        <PackageSearch className="w-5 h-5" />
-                        Inventory & Needs
-                    </Link>
-                    <Link href="/portals/orphanage/reports" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
-                        <Sparkles className="w-5 h-5" />
-                        Automated Reports
-                    </Link>
-                    <Link href="/portals/orphanage/volunteers" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-purple-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
-                        <UserPlus className="w-5 h-5" />
-                        Volunteers
                     </Link>
                 </nav>
 
