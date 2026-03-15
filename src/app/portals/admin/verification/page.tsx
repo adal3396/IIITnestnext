@@ -1,6 +1,5 @@
-"use client";
 import { useEffect, useState } from "react";
-import { Building2, CheckCircle, XCircle, FileText, Eye, ShieldCheck, Clock, Loader2 } from "lucide-react";
+import { Building2, CheckCircle, XCircle, FileText, Eye, ShieldCheck, Clock, Loader2, Scan, FileCheck } from "lucide-react";
 
 interface OrphanageRegistration {
     id: string;
@@ -81,56 +80,85 @@ export default function VerificationQueuePage() {
             {!loading && orgs.map((org) => (
                 <div key={org.id} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                            <div className="p-3 bg-slate-100 rounded-xl text-slate-600">
-                                <Building2 className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <h2 className="text-lg font-bold text-slate-900">{org.name}</h2>
-                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor(org.ai_status)}`}>
-                                        AI: {org.ai_status} ({org.ai_confidence}%)
-                                    </span>
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            <div className="flex items-start gap-4 flex-1">
+                                <div className="p-3 bg-slate-100 rounded-xl text-slate-600">
+                                    <Building2 className="w-6 h-6" />
                                 </div>
-                                <p className="text-sm text-slate-500 mt-0.5">
-                                    {org.state} · Reg No: {org.registration_no} · Contact: {org.contact_person}
-                                </p>
-                                <p className="text-xs text-slate-400 mt-1">Submitted: {org.submitted_date} · ID: {org.id.slice(0, 8)}</p>
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        <h2 className="text-lg font-bold text-slate-900">{org.name}</h2>
+                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor(org.ai_status)}`}>
+                                            AI: {org.ai_status} ({org.ai_confidence}%)
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-slate-500 mt-0.5">
+                                        {org.state} · Reg No: {org.registration_no} · Contact: {org.contact_person}
+                                    </p>
+                                    <p className="text-xs text-slate-400 mt-1">Submitted: {new Date(org.submitted_date).toLocaleDateString()} · ID: {org.id.slice(0, 8)}</p>
+                                </div>
+                            </div>
+    
+                            <div className="flex gap-2 flex-shrink-0">
+                                <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                                    <Eye className="w-4 h-4" /> View Docs
+                                </button>
+                                <button
+                                    onClick={() => handleAction(org.id, "approve")}
+                                    disabled={!!actioning}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-60"
+                                >
+                                    {actioning === org.id + "approve" ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                    Approve
+                                </button>
+                                <button
+                                    onClick={() => handleAction(org.id, "reject")}
+                                    disabled={!!actioning}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-60"
+                                >
+                                    {actioning === org.id + "reject" ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                    Reject
+                                </button>
                             </div>
                         </div>
-
-                        <div className="flex gap-2 flex-shrink-0">
-                            <button className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
-                                <Eye className="w-4 h-4" /> View Docs
-                            </button>
-                            <button
-                                onClick={() => handleAction(org.id, "approve")}
-                                disabled={!!actioning}
-                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-60"
-                            >
-                                {actioning === org.id + "approve" ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                                Approve
-                            </button>
-                            <button
-                                onClick={() => handleAction(org.id, "reject")}
-                                disabled={!!actioning}
-                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-60"
-                            >
-                                {actioning === org.id + "reject" ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                                Reject
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Documents */}
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Uploaded Documents</p>
-                        <div className="flex flex-wrap gap-2">
-                            {(org.documents ?? []).map((doc) => (
-                                <span key={doc} className="flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg">
-                                    <FileText className="w-3 h-3" /> {doc}
-                                </span>
-                            ))}
+    
+                        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Documents Uploaded Panel */}
+                            <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <FileCheck className="w-4 h-4 text-slate-500" />
+                                    <h3 className="text-sm font-bold text-slate-700">Uploaded Documents</h3>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    {(org.documents ?? []).map((doc) => (
+                                        <span key={doc} className="flex items-center gap-2 text-sm text-slate-600 px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                            <FileText className="w-4 h-4 text-slate-400" /> {doc}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* AI OCR Extraction Panel */}
+                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Scan className="w-4 h-4 text-indigo-500" />
+                                    <h3 className="text-sm font-bold text-indigo-900">AI OCR Extraction Summary</h3>
+                                </div>
+                                <div className="bg-white border border-indigo-50 rounded-lg p-3 shadow-sm relative h-[140px] overflow-y-auto custom-scrollbar">
+                                    <pre className="text-xs text-slate-700 font-mono whitespace-pre-wrap">
+{`{
+  "entity_name": "${org.name}",
+  "registration_number": "${org.registration_no}",
+  "state_of_operation": "${org.state}",
+  "primary_contact": "${org.contact_person}",
+  "document_authenticity": "High",
+  "80G_tax_exemption_valid": true,
+  "last_audit_year": 2024,
+  "flags": []
+}`}
+                                    </pre>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

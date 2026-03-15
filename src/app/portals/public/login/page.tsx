@@ -3,11 +3,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Heart, Building2, ShieldCheck } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const ROLES = [
-    { value: "donor", label: "Donor / CSR Partner", icon: <Heart className="w-6 h-6" />, href: "/donor", color: "border-orange-400 bg-orange-50 text-orange-800" },
-    { value: "orphanage", label: "Orphanage Staff", icon: <Building2 className="w-6 h-6" />, href: "/orphanage", color: "border-blue-400 bg-blue-50 text-blue-900" },
-    { value: "admin", label: "Super Admin", icon: <ShieldCheck className="w-6 h-6" />, href: "/admin", color: "border-green-400 bg-green-50 text-green-800" },
+    { value: "donor", label: "Donor / CSR Partner", icon: <Heart className="w-6 h-6" />, href: "/portals/donor", color: "border-orange-400 bg-orange-50 text-orange-800" },
+    { value: "orphanage", label: "Orphanage Staff", icon: <Building2 className="w-6 h-6" />, href: "/portals/orphanage", color: "border-blue-400 bg-blue-50 text-blue-900" },
+    { value: "admin", label: "Super Admin", icon: <ShieldCheck className="w-6 h-6" />, href: "/portals/admin", color: "border-green-400 bg-green-50 text-green-800" },
 ];
 
 export default function LoginPage() {
@@ -17,6 +18,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
     const selectedRole = ROLES.find((r) => r.value === role) ?? ROLES[0];
@@ -24,9 +26,46 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        // Simulate auth delay — wire to Supabase Auth here
-        await new Promise((res) => setTimeout(res, 800));
-        router.push(selectedRole.href);
+        setError(null);
+
+        try {
+            if (role === "admin") {
+                // Call the Super Admin Next.js API route
+                const res = await fetch("/api/auth/admin/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Super Admin authentication failed");
+                }
+
+                router.push(selectedRole.href);
+                return;
+            }
+
+            // Normal Donor or Orphanage Supabase Auth
+            const { data, error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (signInError) {
+                throw signInError;
+            }
+
+            // Optional: verify that the user's role matches what they selected
+            // if (data.user?.user_metadata?.role !== role) { ... }
+
+            // Immediately redirect
+            router.push(selectedRole.href);
+        } catch (err: any) {
+            setError(err.message || "An error occurred during sign in. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -46,17 +85,22 @@ export default function LoginPage() {
                                 key={r.value}
                                 type="button"
                                 onClick={() => setRole(r.value)}
-                                className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-md border-2 text-xs font-semibold transition-all ${
-                                    role === r.value
+                                className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-md border-2 text-xs font-semibold transition-all ${role === r.value
                                         ? r.color + " border-opacity-100"
                                         : "border-gray-200 text-gray-500 hover:border-gray-400"
-                                }`}
+                                    }`}
                             >
                                 <span className="mb-1">{r.icon}</span>
                                 <span className="leading-tight text-center">{r.label}</span>
                             </button>
                         ))}
                     </div>
+
+                    {error && (
+                        <div className="mb-4 p-3 rounded-md bg-red-50 text-red-600 text-sm border border-red-200">
+                            {error}
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>

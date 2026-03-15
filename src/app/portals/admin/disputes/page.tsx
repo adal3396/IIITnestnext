@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { MessageSquare, AlertCircle, CheckCircle, Clock, Send, Loader2 } from "lucide-react";
+import { MessageSquare, AlertCircle, CheckCircle, Clock, Send, Loader2, Bot } from "lucide-react";
 
 interface Ticket {
     id: string;
@@ -65,6 +65,28 @@ export default function DisputesPage() {
             const updated = await res.json();
             setTickets((prev) => prev.map((t) => t.id === id ? updated : t));
             setReplies((prev) => ({ ...prev, [id]: "" }));
+        }
+        setActioning(null);
+    };
+
+    const handleAiSuggest = async (ticket: Ticket) => {
+        setActioning(ticket.id + "ai");
+        try {
+            const res = await fetch("/api/admin/disputes/suggest", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    subject: ticket.subject, 
+                    type: ticket.type, 
+                    raised_by: ticket.raised_by 
+                }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setReplies((prev) => ({ ...prev, [ticket.id]: data.suggestion }));
+            }
+        } catch (error) {
+            console.error(error);
         }
         setActioning(null);
     };
@@ -154,22 +176,34 @@ export default function DisputesPage() {
 
                     {/* Reply Box */}
                     {t.status !== "Resolved" && (
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={replies[t.id] ?? ""}
-                                onChange={(e) => setReplies((prev) => ({ ...prev, [t.id]: e.target.value }))}
-                                placeholder="Type your response..."
-                                className="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                            />
-                            <button
-                                onClick={() => handleReply(t.id)}
-                                disabled={actioning === t.id + "reply"}
-                                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-slate-900 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-60"
-                            >
-                                {actioning === t.id + "reply" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                Send
-                            </button>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={replies[t.id] ?? ""}
+                                    onChange={(e) => setReplies((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                                    placeholder="Type your response..."
+                                    className="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                />
+                                <button
+                                    onClick={() => handleReply(t.id)}
+                                    disabled={actioning === t.id + "reply"}
+                                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-slate-900 rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-60"
+                                >
+                                    {actioning === t.id + "reply" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                    Send
+                                </button>
+                            </div>
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={() => handleAiSuggest(t)}
+                                    disabled={actioning === t.id + "ai"}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 rounded border border-purple-200 hover:bg-purple-100 transition-colors disabled:opacity-60"
+                                >
+                                    {actioning === t.id + "ai" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
+                                    AI Suggestion
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

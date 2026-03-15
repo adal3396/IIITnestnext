@@ -9,7 +9,7 @@ export default function DonorDashboard() {
                     <h1 className="text-2xl text-gray-800 font-bold">Good Morning, John</h1>
                     <p className="text-gray-500 mt-1">Here is the latest update on your impact.</p>
                 </div>
-                <Link href="/donor/donate" className="flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-colors font-medium">
+                <Link href="/portals/donor/donate" className="flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-colors font-medium">
                     <HeartHandshake className="w-5 h-5" />
                     Donate Now
                 </Link>
@@ -46,7 +46,7 @@ export default function DonorDashboard() {
                         <h3 className="text-lg font-bold mb-2">Speak to the AI Advisor</h3>
                         <p className="text-teal-50 text-sm">Get personalized recommendations on where your funds can make the biggest impact right now.</p>
                     </div>
-                    <Link href="/donor/advisor" className="mt-4 flex items-center gap-2 text-sm font-semibold hover:text-teal-100 transition-colors">
+                    <Link href="/portals/donor/advisor" className="mt-4 flex items-center gap-2 text-sm font-semibold hover:text-teal-100 transition-colors">
                         Start Chat <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
