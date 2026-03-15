@@ -1,8 +1,10 @@
-import { ArrowLeft, Brain, Calendar, GraduationCap, MapPin, User, AlertTriangle } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ArrowLeft, Brain, Calendar, GraduationCap, MapPin, User, AlertTriangle, Printer, Settings, X } from "lucide-react";
 import Link from "next/link";
 
 export default function ChildProfile({ params }: { params: { id: string } }) {
-    // In a real app, we would fetch data based on params.id
     const child = {
         name: "Rahul Sharma",
         id: "1094",
@@ -17,15 +19,63 @@ export default function ChildProfile({ params }: { params: { id: string } }) {
         address: "Block B, Care Home Wing"
     };
 
+    const [interventionModal, setInterventionModal] = useState(false);
+    const [notifyDone, setNotifyDone] = useState(false);
+    const [settingsModal, setSettingsModal] = useState(false);
+    const [settingsLoaded, setSettingsLoaded] = useState(false);
+    const [alertEmail, setAlertEmail] = useState(true);
+    const [alertSms, setAlertSms] = useState(false);
+
+    const loadSettings = () => {
+        if (!settingsLoaded) {
+            setAlertEmail(true);
+            setAlertSms(false);
+            setSettingsLoaded(true);
+        }
+        setSettingsModal(true);
+    };
+
+    const handlePrint = () => {
+        const w = window.open("", "_blank");
+        if (!w) return;
+        w.document.write(`
+            <!DOCTYPE html><html><head><title>Child Profile - ${child.name}</title></head><body style="font-family:sans-serif;padding:2rem;">
+            <h1>NextNest — Child Profile</h1>
+            <p style="color:#666;">Child ID: #${child.id} · Generated ${new Date().toLocaleString("en-IN")}</p>
+            <table style="border-collapse:collapse;margin-top:1rem;">
+            <tr><td style="padding:0.5rem;font-weight:600;">Name</td><td style="padding:0.5rem;">${child.name}</td></tr>
+            <tr><td style="padding:0.5rem;font-weight:600;">Age / Gender</td><td style="padding:0.5rem;">${child.age} yrs, ${child.gender}</td></tr>
+            <tr><td style="padding:0.5rem;font-weight:600;">Admission</td><td style="padding:0.5rem;">${child.admissionDate}</td></tr>
+            <tr><td style="padding:0.5rem;font-weight:600;">School / Grade</td><td style="padding:0.5rem;">${child.school} — ${child.grade}</td></tr>
+            <tr><td style="padding:0.5rem;font-weight:600;">AI Risk Score</td><td style="padding:0.5rem;">${child.riskScore}%</td></tr>
+            </table>
+            <p style="font-size:0.75rem;color:#888;margin-top:1.5rem;">DPDP Act 2023 compliant. Internal use only.</p>
+            </body></html>
+        `);
+        w.document.close();
+        w.focus();
+        setTimeout(() => { w.print(); w.close(); }, 250);
+    };
+
     return (
         <div className="space-y-6">
-            <Link 
-                href="/portals/orphanage" 
-                className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-purple-600 transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
-            </Link>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <Link 
+                    href="/portals/orphanage" 
+                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-purple-600 transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Dashboard
+                </Link>
+                <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-purple-600 hover:text-purple-700 bg-purple-50 px-3 py-2 rounded-lg"
+                >
+                    <Printer className="w-4 h-4" />
+                    Print profile
+                </button>
+            </div>
 
             <div className="flex flex-col lg:flex-row gap-6">
                 {/* Left Column: Basic Info */}
@@ -82,15 +132,92 @@ export default function ChildProfile({ params }: { params: { id: string } }) {
                         <p className="text-amber-800 text-sm leading-relaxed mb-6">
                             Academic tracking data shows significant gaps in math and science attendance over the last quarter. AI models suggest a high probability of disengagement if intervention is not initiated within the next 30 days.
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button className="bg-amber-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-amber-700 transition-colors text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setInterventionModal(true)}
+                                className="bg-amber-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-amber-700 transition-colors text-sm"
+                            >
                                 Create Intervention Plan
                             </button>
-                            <button className="bg-white border-2 border-amber-200 text-amber-700 px-4 py-2 rounded-lg font-bold hover:bg-amber-100 transition-colors text-sm">
-                                Notify Case Worker
+                            <button
+                                type="button"
+                                onClick={() => { setNotifyDone(true); setTimeout(() => setNotifyDone(false), 3000); }}
+                                className="bg-white border-2 border-amber-200 text-amber-700 px-4 py-2 rounded-lg font-bold hover:bg-amber-100 transition-colors text-sm"
+                            >
+                                {notifyDone ? "Notified ✓" : "Notify Case Worker"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={loadSettings}
+                                className="bg-white border-2 border-amber-200 text-amber-700 px-4 py-2 rounded-lg font-bold hover:bg-amber-100 transition-colors text-sm flex items-center justify-center gap-1.5"
+                            >
+                                <Settings className="w-4 h-4" />
+                                Alert settings
                             </button>
                         </div>
                     </div>
+
+                    {/* Create Intervention Plan modal */}
+                    {interventionModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4">Create Intervention Plan</h3>
+                                <p className="text-sm text-gray-600 mb-4">Outline steps for this child (e.g. tutoring, counselling, parent meeting). Plan will be logged for the case worker.</p>
+                                <textarea
+                                    placeholder="e.g. 1. Schedule math tuition 2x/week&#10;2. Weekly check-in with class teacher&#10;3. Review in 30 days"
+                                    rows={4}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 outline-none"
+                                />
+                                <div className="flex gap-2 mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setInterventionModal(false)}
+                                        className="flex-1 py-2 border border-gray-200 rounded-lg font-semibold text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setInterventionModal(false); }}
+                                        className="flex-1 py-2 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700"
+                                    >
+                                        Save plan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Alert settings modal */}
+                    {settingsModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold text-gray-800">Risk alert settings</h3>
+                                    <button type="button" onClick={() => setSettingsModal(false)} className="text-gray-400 hover:text-gray-600">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-4">How to be notified when AI flags this child.</p>
+                                <label className="flex items-center justify-between py-2 border-b border-gray-100">
+                                    <span className="text-sm font-medium text-gray-700">Email alerts</span>
+                                    <input type="checkbox" checked={alertEmail} onChange={(e) => setAlertEmail(e.target.checked)} className="w-4 h-4 accent-amber-500" />
+                                </label>
+                                <label className="flex items-center justify-between py-2">
+                                    <span className="text-sm font-medium text-gray-700">SMS alerts</span>
+                                    <input type="checkbox" checked={alertSms} onChange={(e) => setAlertSms(e.target.checked)} className="w-4 h-4 accent-amber-500" />
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettingsModal(false)}
+                                    className="mt-4 w-full py-2 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* School Info */}
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
