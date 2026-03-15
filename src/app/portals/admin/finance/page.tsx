@@ -14,6 +14,11 @@ type LedgerTransaction = {
     tip_amount: number;
     status: string;
     created_at: string;
+    // Phase 2 Schema additions
+    gross_amount?: number;
+    net_amount?: number;
+    maintenance_fee?: number;
+    donor_tip?: number;
 };
 
 type FinanceData = {
@@ -123,11 +128,13 @@ export default function FinanceDashboard() {
                                     <td className="p-4 text-slate-600">{new Date(txn.created_at).toLocaleDateString()}</td>
                                     <td className="p-4 font-medium text-slate-900">{txn.donor_name}</td>
                                     <td className="p-4 text-slate-600">{txn.orphanage_name}</td>
-                                    <td className="p-4 text-right font-bold text-slate-900">{formatCurrency(txn.amount_total)}</td>
+                                    <td className="p-4 text-right font-bold text-slate-900">{formatCurrency(txn.amount_total ?? txn.gross_amount ?? 0)}</td>
                                     <td className="p-4 text-right">
-                                        <div className="text-xs text-slate-500">Org: <span className="font-medium text-emerald-600">{formatCurrency(txn.amount_orphanage)}</span></div>
-                                        <div className="text-xs text-slate-500">Fee: <span className="font-medium text-blue-600">{formatCurrency(txn.fee_platform)}</span></div>
-                                        {txn.tip_amount > 0 && <div className="text-xs text-slate-500">Tip: <span className="font-medium text-purple-600">{formatCurrency(txn.tip_amount)}</span></div>}
+                                        <div className="text-xs text-slate-500">Org: <span className="font-medium text-emerald-600">{formatCurrency(txn.amount_orphanage ?? txn.net_amount ?? 0)}</span></div>
+                                        <div className="text-xs text-slate-500">Fee: <span className="font-medium text-blue-600">{formatCurrency(txn.fee_platform ?? txn.maintenance_fee ?? 0)}</span></div>
+                                        {(Number(txn.tip_amount ?? txn.donor_tip) > 0) && (
+                                            <div className="text-xs text-slate-500">Tip: <span className="font-medium text-purple-600">{formatCurrency(txn.tip_amount ?? txn.donor_tip ?? 0)}</span></div>
+                                        )}
                                     </td>
                                     <td className="p-4 text-center">
                                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${txn.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>

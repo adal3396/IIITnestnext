@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { Building2, CheckCircle, XCircle, FileText, Eye, ShieldCheck, Clock, Loader2, Scan, FileCheck } from "lucide-react";
 

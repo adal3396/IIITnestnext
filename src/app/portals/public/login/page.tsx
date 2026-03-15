@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Heart, Building2, ShieldCheck } from "lucide-react";
+import { Heart, Building2, ShieldCheck, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 const ROLES = [
@@ -12,6 +12,14 @@ const ROLES = [
 ];
 
 export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="w-8 h-8 animate-spin text-blue-900" /></div>}>
+            <LoginPageInner />
+        </Suspense>
+    );
+}
+
+function LoginPageInner() {
     const searchParams = useSearchParams();
     const defaultRole = searchParams.get("role") ?? "donor";
     const [role, setRole] = useState(defaultRole);
