@@ -13,6 +13,7 @@ export async function POST(request: Request) {
         }
 
         const supabaseAdmin = getSupabaseAdmin();
+
         // 1. Create the user using admin privileges (bypasses rate limits & auth confirmation)
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
@@ -29,6 +30,29 @@ export async function POST(request: Request) {
         if (authError) {
             console.error("[Register API] Auth Error:", authError);
             return NextResponse.json({ error: authError.message }, { status: 400 });
+        }
+
+        // 2. Gap 2 Fix: If registering as orphanage, auto-create a pending registration
+        //    so it appears in the admin verification queue immediately.
+        if (role === "orphanage" && orgName?.trim()) {
+            const { error: regError } = await supabaseAdmin
+                .from("orphanage_registrations")
+                .insert({
+                    name: orgName.trim(),
+                    state: "Pending Verification",
+                    registration_no: `PORTAL-${authData.user?.id?.slice(0, 8)?.toUpperCase() ?? "UNKNOWN"}`,
+                    contact_person: name || email,
+                    status: "pending",
+                    ai_status: "Needs Review",
+                    ai_confidence: 50,
+                    documents: [],
+                });
+            if (regError) {
+                // Non-fatal: user was still created, log but continue
+                console.warn("[Register API] Could not create orphanage_registrations row:", regError.message);
+            } else {
+                console.log(`[Register API] Created pending orphanage_registrations entry for "${orgName}"`);
+            }
         }
 
         console.log(`[Register API] Successfully registered ${email} as ${role}`);
