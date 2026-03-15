@@ -6,9 +6,10 @@ import {
     History,
     Settings,
     LogOut,
-    TrendingUp,
-    Users
+    HeartPulse,
+    Trophy
 } from "lucide-react";
+import DonorHeader from "./DonorHeader";
 
 export default function DonorDashboardLayout({
     children,
@@ -42,6 +43,14 @@ export default function DonorDashboardLayout({
                         <History className="w-5 h-5" />
                         Contribution History
                     </Link>
+                    <Link href="/portals/donor/medical-cases" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                        <HeartPulse className="w-5 h-5" />
+                        Medical Cases
+                    </Link>
+                    <Link href="/portals/donor/achievements" className="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-teal-700 hover:bg-gray-50 rounded-lg font-medium transition-colors">
+                        <Trophy className="w-5 h-5" />
+                        Achievements
+                    </Link>
                 </nav>
 
                 <div className="p-4 border-t border-gray-200 space-y-2">
@@ -62,10 +71,7 @@ export default function DonorDashboardLayout({
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 md:justify-end">
                     <div className="md:hidden text-xl font-bold text-teal-600">NextNest Donor</div>
                     <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-gray-500">Welcome, Donor</span>
-                        <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold">
-                            JD
-                        </div>
+                        <DonorHeader />
                     </div>
                 </header>
 

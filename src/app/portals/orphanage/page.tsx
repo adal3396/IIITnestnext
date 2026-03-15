@@ -1,10 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, AlertTriangle, ArrowRight, X, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import AnnouncementsStrip from "./AnnouncementsStrip";
 
 export default function OrphanageDashboard() {
+    const [orgName, setOrgName] = useState<string | null>(null);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const u = session?.user;
+            const n = (u?.user_metadata?.organization_name as string) || (u?.user_metadata?.full_name as string) || "Orphanage";
+            setOrgName(n);
+        });
+    }, []);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
@@ -38,7 +49,7 @@ export default function OrphanageDashboard() {
 
             <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div>
-                    <h1 className="text-2xl text-gray-800 font-bold">Sunshine Orphanage Dashboard</h1>
+                    <h1 className="text-2xl text-gray-800 font-bold">{orgName ?? "Orphanage"} Dashboard</h1>
                     <p className="text-gray-500 mt-1">Here is the daily overview for your facility.</p>
                 </div>
                 <button 
@@ -49,6 +60,8 @@ export default function OrphanageDashboard() {
                     Register Child
                 </button>
             </div>
+
+            <AnnouncementsStrip />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Metric 1 */}

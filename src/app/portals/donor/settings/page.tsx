@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Trash2, Shield, Bell, Eye, Lock, CheckCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function SettingsPage() {
-    const [displayName, setDisplayName] = useState("John Doe");
+    const [displayName, setDisplayName] = useState("");
+    const [email, setEmail] = useState("");
     const [notifications, setNotifications] = useState({
         impactUpdates: true,
         receipts: true,
@@ -12,6 +14,14 @@ export default function SettingsPage() {
     });
     const [saved, setSaved] = useState(false);
     const [deletionRequested, setDeletionRequested] = useState(false);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const u = session?.user;
+            setDisplayName((u?.user_metadata?.full_name as string) || u?.email?.split("@")[0] || "");
+            setEmail(u?.email ?? "");
+        });
+    }, []);
 
     function handleSave(e: React.FormEvent) {
         e.preventDefault();
@@ -60,7 +70,7 @@ export default function SettingsPage() {
                     <input
                         id="email"
                         type="email"
-                        value="john.doe@example.com"
+                        value={email}
                         readOnly
                         aria-label="Your email address (read-only)"
                         aria-readonly="true"

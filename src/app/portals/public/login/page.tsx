@@ -70,7 +70,12 @@ function LoginPageInner() {
             // Immediately redirect
             router.push(selectedRole.href);
         } catch (err: any) {
-            setError(err.message || "An error occurred during sign in. Please try again.");
+            const msg = err.message || "";
+            if (msg.toLowerCase().includes("rate") || msg.toLowerCase().includes("too many")) {
+                setError("Too many login attempts. Please wait a few minutes and try again.");
+            } else {
+                setError(msg || "An error occurred during sign in. Please try again.");
+            }
         } finally {
             setLoading(false);
         }

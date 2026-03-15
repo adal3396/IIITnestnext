@@ -77,7 +77,35 @@ export default function FinanceDashboard() {
                     </h1>
                     <p className="text-slate-500 mt-1">Platform revenue tracking and transaction history.</p>
                 </div>
-                <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">
+                <button
+                    onClick={() => {
+                        if (!data?.transactions?.length) {
+                            alert("No transactions to export.");
+                            return;
+                        }
+                        const headers = ["Reference", "Date", "Donor", "Orphanage", "Total (INR)", "Orphanage Payout", "Platform Fee", "Tip", "Status"];
+                        const rows = data.transactions.map((t: LedgerTransaction) => [
+                            t.transaction_ref ?? t.id,
+                            new Date(t.created_at).toLocaleDateString("en-IN"),
+                            t.donor_name ?? "",
+                            t.orphanage_name ?? "",
+                            t.amount_total ?? t.gross_amount ?? 0,
+                            t.amount_orphanage ?? t.net_amount ?? 0,
+                            t.fee_platform ?? t.maintenance_fee ?? 0,
+                            t.tip_amount ?? t.donor_tip ?? 0,
+                            t.status ?? "",
+                        ]);
+                        const csv = [headers.join(","), ...rows.map((r: (string | number)[]) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+                        const blob = new Blob([csv], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `nextnest-financial-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors"
+                >
                     <Download className="w-4 h-4" />
                     Export CSV
                 </button>
