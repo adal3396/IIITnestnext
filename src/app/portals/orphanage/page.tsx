@@ -1,13 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Users, AlertTriangle, ArrowRight, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import AnnouncementsStrip from "./AnnouncementsStrip";
 
+type ChildItem = { id: string; alias: string; age: number | null; gender: string | null; risk_level: string };
+
 export default function OrphanageDashboard() {
     const [orgName, setOrgName] = useState<string | null>(null);
+    const [children, setChildren] = useState<ChildItem[]>([]);
+    const [childrenLoading, setChildrenLoading] = useState(true);
+
+    const fetchChildren = useCallback(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: HeadersInit = {};
+        if (session?.access_token) (headers as Record<string, string>)["Authorization"] = `Bearer ${session.access_token}`;
+        const res = await fetch("/api/orphanage/children", { headers });
+        const data = await res.json();
+        setChildren(Array.isArray(data.children) ? data.children : []);
+        setChildrenLoading(false);
+    }, []);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -16,6 +30,9 @@ export default function OrphanageDashboard() {
             setOrgName(n);
         });
     }, []);
+
+    useEffect(() => { fetchChildren(); }, [fetchChildren]);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showToast, setShowToast] = useState(false);
@@ -25,19 +42,42 @@ export default function OrphanageDashboard() {
         e.preventDefault();
         const form = e.currentTarget;
         const formData = new FormData(form);
-        const name = (formData.get("fullName") as string) || "";
+        const fullName = (formData.get("fullName") as string) || "";
         const dob = (formData.get("dob") as string) || "";
         const gender = (formData.get("gender") as string) || "";
         const admissionDate = (formData.get("admissionDate") as string) || "";
+        const firstInitial = fullName.trim().split(/\s+/)[0]?.slice(0, 1)?.toUpperCase() || "X";
+        const alias = `Child ${firstInitial}.`;
 
         setIsSubmitting(true);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: HeadersInit = { "Content-Type": "application/json" };
+        if (session?.access_token) (headers as Record<string, string>)["Authorization"] = `Bearer ${session.access_token}`;
 
-        setLastRegistered({ name, dob, gender, admissionDate });
-        setIsSubmitting(false);
-        setIsModalOpen(false);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+        try {
+            const res = await fetch("/api/orphanage/children", {
+                method: "POST",
+                headers,
+                body: JSON.stringify({
+                    alias,
+                    age: dob ? Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null,
+                    gender: gender || null,
+                }),
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to register");
+            }
+            setLastRegistered({ name: fullName, dob, gender, admissionDate });
+            setIsModalOpen(false);
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            fetchChildren();
+        } catch (err: unknown) {
+            alert(err instanceof Error ? err.message : "Registration failed");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handlePrintRegistration = () => {
@@ -111,7 +151,9 @@ export default function OrphanageDashboard() {
                         </div>
                     </div>
                     <h3 className="text-sm font-medium text-gray-500">Total Children</h3>
-                    <div className="text-3xl font-bold text-gray-800 mt-1">42</div>
+                    <div className="text-3xl font-bold text-gray-800 mt-1">
+                        {childrenLoading ? "—" : children.length}
+                    </div>
                 </div>
 
                 {/* Metric 2 */}
@@ -120,10 +162,17 @@ export default function OrphanageDashboard() {
                         <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
                             <AlertTriangle className="w-6 h-6" />
                         </div>
-                        <span className="text-amber-600 bg-amber-50 text-xs font-semibold px-2 py-1 rounded-full">Requires Attention</span>
+                        {(() => {
+                            const riskCount = children.filter((c) => c.risk_level === "high" || c.risk_level === "critical").length;
+                            return riskCount > 0 ? (
+                                <span className="text-amber-600 bg-amber-50 text-xs font-semibold px-2 py-1 rounded-full">Requires Attention</span>
+                            ) : null;
+                        })()}
                     </div>
                     <h3 className="text-sm font-medium text-gray-500">AI Risk Alerts</h3>
-                    <div className="text-3xl font-bold text-gray-800 mt-1">3</div>
+                    <div className="text-3xl font-bold text-gray-800 mt-1">
+                        {childrenLoading ? "—" : children.filter((c) => c.risk_level === "high" || c.risk_level === "critical").length}
+                    </div>
                 </div>
 
                 {/* Action Card */}
@@ -144,20 +193,30 @@ export default function OrphanageDashboard() {
                     <AlertTriangle className="w-5 h-5 text-amber-500" /> Action Items
                 </h2>
                 <div className="space-y-4">
-                    <div className="flex items-start justify-between py-3 border-b border-gray-50 last:border-0 border-gray-100">
-                        <div>
-                            <p className="font-medium text-gray-800">Child ID: #1094 - Predictive Risk Alert</p>
-                            <p className="text-sm text-gray-500">AI has flagged a 72% academic drop-out risk based on recent attendance patterns.</p>
-                        </div>
-                        <Link href="/portals/orphanage/children/1094" className="text-sm text-purple-600 font-semibold hover:underline">View Profile</Link>
-                    </div>
-                    <div className="flex items-start justify-between py-3 border-b border-gray-50 last:border-0 border-gray-100">
-                        <div>
-                            <p className="font-medium text-gray-800">Review Pending Transitions</p>
-                            <p className="text-sm text-gray-500">2 careleavers are awaiting vocational skill matching.</p>
-                        </div>
-                        <Link href="/portals/orphanage/transition" className="text-sm text-purple-600 font-semibold hover:underline">Review Now</Link>
-                    </div>
+                    {childrenLoading ? (
+                        <p className="text-gray-500 text-sm">Loading…</p>
+                    ) : (
+                        <>
+                            {children.filter((c) => c.risk_level === "high" || c.risk_level === "critical").slice(0, 3).map((c) => (
+                                <div key={c.id} className="flex items-start justify-between py-3 border-b border-gray-50 last:border-0 border-gray-100">
+                                    <div>
+                                        <p className="font-medium text-gray-800">{c.alias} — Predictive Risk Alert</p>
+                                        <p className="text-sm text-gray-500">AI has flagged {c.risk_level} risk. Review profile for details.</p>
+                                    </div>
+                                    <Link href={`/portals/orphanage/children/${c.id}`} className="text-sm text-purple-600 font-semibold hover:underline">View Profile</Link>
+                                </div>
+                            ))}
+                            {children.filter((c) => c.risk_level === "high" || c.risk_level === "critical").length === 0 && (
+                                <div className="flex items-start justify-between py-3 border-b border-gray-50 last:border-0 border-gray-100">
+                                    <div>
+                                        <p className="font-medium text-gray-800">Review Pending Transitions</p>
+                                        <p className="text-sm text-gray-500">Careleavers awaiting vocational skill matching.</p>
+                                    </div>
+                                    <Link href="/portals/orphanage/transition" className="text-sm text-purple-600 font-semibold hover:underline">Review Now</Link>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
 
